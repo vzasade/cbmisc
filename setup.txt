@@ -1,0 +1,27 @@
+gpicker
+--------
+
+https://github.com/alk/gpicker
+https://github.com/alk/gpicker/blob/master/README.osx
+
+setting up jhbuild:
+https://wiki.gnome.org/Projects/GTK+/OSX/Building
+
+./bootstrap
+./configure
+make
+make install
+
+
+gerrit
+------
+
+http://www.couchbase.com/wiki/display/couchbase/Contributing+Changes
+
+git remote add gerrit ssh://review.couchbase.org:29418/ns_server.git
+
+kdiff3
+------
+git config --global merge.tool kdiff3
+git config --global mergetool.kdiff3.cmd '/Applications/kdiff3.app/Contents/MacOS/kdiff3 $BASE $LOCAL $REMOTE -o $MERGED'
+git mergetool
