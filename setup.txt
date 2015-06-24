@@ -1,3 +1,17 @@
+erlang
+------
+
+brew tap homebrew/versions
+brew install -v erlang-r16
+
+bin:
+/usr/local/Cellar/erlang-r16/R16B03-1_2/lib/erlang/erts-5.10.4/bin
+/usr/local/bin
+
+lib:
+/usr/local/Cellar/erlang-r16/R16B03-1_2/lib/erlang/lib
+/usr/local/lib/erlang/lib
+
 gpicker
 --------
 
