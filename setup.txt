@@ -12,6 +12,12 @@ lib:
 /usr/local/Cellar/erlang-r16/R16B03-1_2/lib/erlang/lib
 /usr/local/lib/erlang/lib
 
+erlang 14
+---------
+
+brew install erlang-r14 --enable-darwin-64bit
+export PATH=/usr/local/Cellar/erlang-r14/R14B04_1/bin:$PATH
+
 distel
 ------
 https://github.com/massemanet/distel
