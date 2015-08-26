@@ -18,6 +18,13 @@ erlang 14
 brew install erlang-r14 --enable-darwin-64bit
 export PATH=/usr/local/Cellar/erlang-r14/R14B04_1/bin:$PATH
 
+compiling with gcc instead of clang (wasn't too useful)
+-----------------------------------
+
+brew tap homebrew/versions
+brew install gcc49
+make CC=/usr/local/bin/gcc-4.9 CXX=/usr/local/bin/g++-4.9 CFLAGS='-std=c11'
+
 distel
 ------
 https://github.com/massemanet/distel
