@@ -285,6 +285,7 @@ POST /settings/viewUpdateDaemon
 {indexes, manage}
 
 POST /settings/readOnlyUser
+DELETE /settings/readOnlyUser
 POST /settings/saslauthdAuth
 POST /settings/audit
 POST /validateCredentials
@@ -295,11 +296,16 @@ POST /settings/replications - global
 {xdcr_settings, manage}
 
 POST /settings/replications/<xid> - also includes start/pause as pauseRequested=false/true
+{{xdcr_replications, <bucket_name>}, manage}
+{{xdcr_replications, <bucket_name>}, start_stop}
+Note: should be enforced by goxdcr
+
 POST /controller/createReplication
 POST /controller/cancelXDCR/<xid>
 POST /controller/cancelXCDR/<xid>
+DELETE /controller/cancelXDCR/<xid>
+DELETE /controller/cancelXCDR/<xid>
 {{xdcr_replications, <bucket_name>}, manage}
-{{xdcr_replications, <bucket_name>}, start_stop}
 Note: should be enforced by goxdcr
 
 POST /internalSettings
@@ -347,6 +353,7 @@ POST /pools/default/buckets
 {cluster, create_bucket}
 
 POST /pools/default/buckets/<bucket_name>/docs/<doc_id>
+DELETE /pools/default/buckets/<bucket_name>/docs/<doc_id>
 {{bucket, <bucket_name>}, change_data}
 
 GET /pools/default/buckets/<name>/recoveryStatus
@@ -365,15 +372,18 @@ https://issues.couchbase.com/browse/CBD-423
 
 POST /pools/default/remoteClusters
 POST /pools/default/remoteClusters/<id>
+DELETE /pools/default/remoteClusters/<id>
 {remote_clusters, manage}
 
 POST /pools/default/serverGroups
+DELETE /pools/default/serverGroups/<uuid>
 {server_groups, manage}
 
 POST /pools/default/settings/memcached/global
 POST /pools/default/settings/memcached/effective/<node>
 POST /pools/default/settings/memcached/node/<node>
 POST /pools/default/settings/memcached/node/<node>/setting/<name>
+DELETE /pools/default/settings/memcached/node/<node>/setting/<name>
 {memcached, manage}
 
 POST /settings/indexes
@@ -398,8 +408,17 @@ POST /diag/eval
 full admin!!!!
 
 POST /couchBase/...
+DELETE /couchBase/...
+PUT /couchBase/...
 needs proper roles propagation so views access can be restricted in capi
 
+DELETE /pools/default/buckets/<bucket_name>
+{{bucket, <bucket_name>}, delete}
+
+GET /_metakv
+PUT /_metakv
+DELETE /_metakv
+internal users
 
 ------------------------
 http://127.0.0.1:9500
