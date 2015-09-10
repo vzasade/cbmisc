@@ -1,0 +1,497 @@
+------------------------
+http://127.0.0.1:9000
+------------------------
+
+free for all:
+-------------
+
+GET /versions
+
+any creds (any bucket):
+-----------------------
+
+GET /pools
+note: returns "isAdminCreds":true,"isROAdminCreds":false (hopefully used only by UI)
+{cluster, get}
+
+GET /pools/default
+{cluster, get}
+
+GET /pools/nodes
+{cluster, get}
+
+GET /poolsStreaming/default (exposes otp cookie only to admin)
+{cluster, get}
+{cookie, get}
+
+GET /pools/default/buckets exposes bucket password
+{{bucket, <name>}, get}
+{{bucket, <name>}, get_password}
+
+all admin roles (not bucket passwords) (ro_admin)
+-------------------------------------------------
+
+GET /pools/default/overviewStats
+{{stats, overwiew}, get}
+
+special handling:
+-----------------
+
+GET /_uistats
+should be accessible to all roles (ro_admin) but stats need to be filtered
+according to permissions
+{{stats, system}, get}
+{{stats, <bucket_name>}, get}
+{{stats, index, <bucket_name>}, get}
+{{stats, xdcr, <bucket_name>}, get}
+{{stats, query}, get}
+{{stats, system}, get}
+
+GET /pools/default/saslBucketsStreaming
+{{bucket, <bucket_name>}, get_password}
+
+GET /pools/default/buckets/<name>
+{{bucket, <name>}, get}
+{{bucket, <name>}, get_password}
+
+GET /pools/default/bucketsStreaming/<name>
+{{bucket, <name>}, get}
+{{bucket, <name>}, get_password}
+
+GET /pools/default/buckets/<name>/ddocs
+{{views, <name>}, get}
+
+GET /pools/default/buckets/<name>/docs
+GET /pools/default/buckets/<name>/docs/<doc_id>
+{{bucket, <name>}, get_data}
+
+GET /pools/default/buckets/@query/stats
+{{stats, query}, get}
+
+GET /pools/default/buckets/@xdcr-<name>/stats
+{{stats, xdcr, <bucket_name>}, get}
+
+GET /pools/default/buckets/@index-<name>/stats
+{{stats, index, <bucket_name>}, get}
+
+GET /pools/default/buckets/<name>/stats
+{{stats, system}, get}
+{{stats, <bucket_name>}, get}
+
+GET /pools/default/buckets/<name>/localRandomKey
+{{bucket, <name>}, get_data}
+
+GET /pools/default/buckets/<name>/statsDirectory
+{{stats, system}, get}
+{{stats, <bucket_name>}, get}
+{{stats, index, <bucket_name>}, get}
+{{stats, xdcr, <bucket_name>}, get}
+{{stats, query}, get}
+{{stats, system}, get}
+
+GET /pools/default/nodeServices
+GET /pools/default/nodeServicesStreaming
+{cluster, get}
+
+GET /pools/default/b/<bucket_name>
+GET /pools/default/bs/<bucket_name>
+GET /pools/default/buckets/<bucket_name>/nodes
+GET /pools/default/buckets/<bucket_name>/nodes/<node_id>
+{{bucket, <bucket_name>}, get}
+
+GET /pools/default/buckets/@query/nodes/<node_id>/stats
+{{stats, query}, get}
+
+GET /pools/default/buckets/@xdcr-<bucket_name>/nodes/<node_id>/stats
+{{stats, xdcr, <bucket_name>}, get}
+
+GET /pools/default/buckets/@index-<bucket_name>/nodes/<node_id>/stats
+{{stats, index, <bucket_name>}, get}
+
+GET /pools/default/buckets/<bucket_id>/nodes/<node_id>/stats
+{{stats, system}, get}
+{{stats, <bucket_name>}, get}
+
+GET /pools/default/buckets/<bucket_id>/stats/<stat_name>
+{{stats, system}, get}
+{{stats, <bucket_name>}, get}
+{{stats, index, <bucket_name>}, get}
+{{stats, xdcr, <bucket_name>}, get}
+{{stats, query}, get}
+
+GET /pools/default/remoteClusters
+{remote_clusters, get}
+
+GET /pools/default/serverGroups
+{server_groups, get}
+
+GET /pools/default/certificate
+{security, get}
+
+GET /pools/default/settings/memcached/global
+GET /pools/default/settings/memcached/effective/<node>
+GET /pools/default/settings/memcached/node/<node>
+GET /pools/default/settings/memcached/node/<node>/setting/<name>
+{memcached, get}
+
+GET /logs
+full admin, displays otp cookie
+
+GET /nodeStatuses
+GET /settings/web
+GET /settings/alerts
+GET /settings/stats
+GET /settings/autoFailover
+GET /settings/autoCompaction
+GET /nodes/<node_id>
+{cluster, get}
+
+GET /settings/maxParallelIndexers
+GET /settings/viewUpdateDaemon
+GET /indexStatus
+GET /settings/indexes
+{indexes, get}
+
+GET /settings/readOnlyAdminName
+GET /settings/saslauthdAuth
+GET /settings/audit
+{security, get}
+
+GET /settings/replications
+{xdcr_settings, get}
+
+GET /settings/replications/<id>
+{{xdcr_replications, <bucket_name>}, get}
+Note: should be enforced by goxdcr
+
+GET /internalSettings
+{cluster, get}
+{xdcr_settings, get}
+
+GET /nodes/self/xdcrSSLPorts
+no auth
+
+POST /uilogin
+POST /uilogout
+no auth
+
+POST /sampleBuckets/install
+{sample_buckets, install}
+
+POST /engageCluster2
+need full admin (because destroys the node)
+
+POST /completeJoin
+need full admin (because destroys the node)
+
+POST /node/controller/doJoinCluster
+POST /node/controller/doJoinClusterV2
+need full admin since done on joinee
+
+POST /node/controller/rename
+full admin, because it is disallowed for nodes that are part of the cluster
+
+POST /nodes/<node>/controller/settings
+change of dbpath and indexpath
+change of dbpath is allowed only on nonprov clusters
+change of index path or db path requires ns_server restart
+full admin
+
+POST /node/controller/setupServices
+only on non provisioned cluster
+full admin
+
+POST /settings/web
+changes admin/password and web port
+full admin
+
+POST /settings/alerts
+POST /settings/alerts/testEmail
+POST /settings/stats (enable sending stats to remote server) is it even used?
+POST /settings/autoFailover
+POST /settings/autoFailover/resetCount
+POST /controller/setAutoCompaction
+POST /controller/resetAlerts
+{cluster, manage}
+
+POST /settings/maxParallelIndexers
+POST /settings/viewUpdateDaemon
+{indexes, manage}
+
+POST /settings/readOnlyUser
+POST /settings/saslauthdAuth
+POST /settings/audit
+POST /validateCredentials
+POST /controller/regenerateCertificate
+{security, manage}
+
+POST /settings/replications - global
+{xdcr_settings, manage}
+
+POST /settings/replications/<xid> - also includes start/pause as pauseRequested=false/true
+POST /controller/createReplication
+POST /controller/cancelXDCR/<xid>
+POST /controller/cancelXCDR/<xid>
+{{xdcr_replications, <bucket_name>}, manage}
+{{xdcr_replications, <bucket_name>}, start_stop}
+Note: should be enforced by goxdcr
+
+POST /internalSettings
+{cluster, manage}
+{xdcr_settings, manage}
+
+POST /pools/default
+quotas + cluster_name
+{cluster, manage}
+
+POST /controller/ejectNode
+POST /controller/addNode
+POST /controller/addNodeV2
+POST /pools/default/serverGroups/<uuid>/addNode
+POST /pools/default/serverGroups/<uuid>/addNodeV2
+POST /controller/failOver
+POST /controller/startGracefulFailover
+POST /controller/rebalance
+POST /controller/reAddNode
+POST /controller/reFailOver
+POST /controller/stopRebalance
+POST /controller/setRecoveryType
+{nodes, manage}
+
+POST /controller/startLogsCollection
+POST /controller/cancelLogsCollection
+{logs, collect}
+Note: needs to be full admin only because logs can contain erlang cookie
+
+POST /pools/default/buckets/<bucket_name>
+{{bucket, <bucket_name>}, manage}
+
+POST /pools/default/buckets/<bucket_name>/controller/doFlush
+POST /pools/default/buckets/<bucket_name>/controller/unsafePurgeBucket
+{{bucket, <bucket_name>}, flush_data}
+
+POST /pools/default/buckets/<bucket_name>/controller/compactBucket
+POST /pools/default/buckets/<bucket_name>/controller/cancelBucketCompaction
+POST /pools/default/buckets/<bucket_name>/controller/compactDatabases
+POST /pools/default/buckets/<bucket_name>/controller/cancelDatabasesCompaction
+{{bucket, <bucket_name>}, compact}
+Note: compactBucket includes views compaction
+
+POST /pools/default/buckets
+{buckets, create}
+
+POST /pools/default/buckets/<bucket_name>/docs/<doc_id>
+{{bucket, <bucket_name>}, change_data}
+
+GET /pools/default/buckets/<name>/recoveryStatus
+POST /pools/default/buckets/<bucket_name>/controller/startRecovery
+POST /pools/default/buckets/<bucket_name>/controller/stopRecovery
+POST /pools/default/buckets/<bucket_name>/controller/commitVBucket
+{{bucket, <bucket_name>}, recover}
+
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/compactView
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/cancelViewCompaction
+{{views, <bucket_name>}, compact}
+
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/setUpdateMinChanges
+{{views, <bucket_name>}, manage}
+https://issues.couchbase.com/browse/CBD-423
+
+POST /pools/default/remoteClusters
+POST /pools/default/remoteClusters/<id>
+{remote_clusters, manage}
+
+POST /pools/default/serverGroups
+{server_groups, manage}
+
+POST /pools/default/settings/memcached/global
+POST /pools/default/settings/memcached/effective/<node>
+POST /pools/default/settings/memcached/node/<node>
+POST /pools/default/settings/memcached/node/<node>/setting/<name>
+{memcached, manage}
+
+POST /settings/indexes
+{indexes, manage}
+
+POST /_cbauth
+full admin: only for internal users
+Note: currently auth_ro. Why?
+
+POST /_log
+full admin. should be internal users only
+
+POST /_goxdcr/regexpValidation
+full admin: only for internal users
+
+POST /logClientError
+should be available to any user who can see the UI
+was restricted to full admin to prevent others from intentionally spamming the logs
+should implement restriction on number of messages per second, and maybe create separate log file for it
+
+POST /diag/eval
+full admin!!!!
+
+POST /couchBase/...
+needs proper roles propagation so views access can be restricted in capi
+
+
+------------------------
+http://127.0.0.1:9500
+------------------------
+
+capi_frontend:verify_bucket_auth
+--------------------------------
+"Capi-Auth-Token" = cookie (set by capi_http_proxy after succesfull auth by menelaus if /couchBase is used)
+or
+menelaus_auth:is_bucket_accessible(BucketTuple, MochiReq);
+
+/
+%%{"couchdb":"Welcome","version":"2.1.1r-506-gb1a22b8","couchbase":"4.0.0r-826-g0301cac-enterprise"}
+%% no auth, method is irrelevant
+
+/_pre_replicate
+/_mass_vbopaque_check
+/_commit_for_checkpoint
+%% sent to target xdcr node during xdcr replication
+%% we use POST method, but method is not enforced, though it has to have body
+%% auth: capi_frontend:verify_bucket_auth(Req, Bucket)
+
+
+/_spatial_merge
+/_view_merge
+%% methods: POST, GET, HEAD
+%% only user "@ns_server"/otp_cookie is allowed
+%% anonymous access in pre 4.0 clusters
+%% MB-8872 add security to endpoints
+%% called only by capi_indexer.erl
+
+/_active_tasks
+%% methods: GET, HEAD
+%% couch_httpd:verify_is_server_admin(Req)
+%% currently unsecured
+
+/_set_view/<name>/_cleanup -> couch_set_view:cleanup_index_files(mapreduce_view, Name),
+%% methods: POST
+%% currently unsecured
+
+/_set_view/<name>/_design/<ddoc_id>/_define
+%% methods: POST
+%% define view group (couch_set_view:define_group)
+%% currently unsecured
+
+/_set_view/<name>/_design/<ddoc_id>/_info
+%% methods: GET
+%% get view group info (couch_set_view:get_group_info)
+%% currently unsecured
+
+/_set_view/<name>/_design/<ddoc_id>/_btree_stats
+%% methods: GET
+%% currently unsecured
+
+/_set_view/<name>/_design/<ddoc_id>/_reset_utilization_stats
+%% methods: POST
+%% currently unsecured
+
+basically there are many of them /_set_view/<name>/_design/<ddoc_id>/......
+GET or POST and all of them unsecured
+
+
+/_spatial_view
+%% similar to _set_view and all unsecured
+
+-----------------------------------------
+default handler: couch_httpd_db, handle_request
+-----------------------------------------
+
+GET /<bucket>%2F<vbucket>
+{"db_name":"buck/1","instance_start_time":"1441680033"} //used by 2.x xdcr checkpointing
+
+POST /<bucket>
+DbFrontend:update_doc
+
+/<db_name>
+capi_frontend:do_db_req(Req, fun db_req/2);
+
+/<db_name>/<db_handler>/....
+capi_frontend:do_db_req(Req, Handler);
+
+do_db_req:
+verify_bucket_auth(Req, BucketName) - either "Capi-Auth-Token" or menelaus_auth:is_bucket_accessible
+verify_bucket_uuid(BucketConfig, UUID)
+
+
+path_parts = [<<"buck">>,<<"_design">>,<<"dev_doccc">>]
+dbname = <<"buck">>
+GET /buck/_design/dev_doccc?_=1441680058670 404
+
+
+
+
+Notes:
+- need to do identity propagation from capi_http_proxy to capi_frontend:verify_bucket_auth
+
+
+
+(couchdb_n_0@127.0.0.1)1> couch_config:get("httpd_global_handlers").
+[{"_set_view","{couch_set_view_http, handle_req}"},
+ {"_active_tasks",
+  "{couch_httpd_misc_handlers, handle_task_status_req}"},
+ {"_mass_vbopaque_check",
+  "{capi_replication, handle_mass_vbopaque_check}"},
+ {"_commit_for_checkpoint",
+  "{capi_replication, handle_commit_for_checkpoint}"},
+ {"/",
+  "{couch_httpd_misc_handlers, handle_welcome_req, <<\"Welcome\">>}"},
+ {"_pre_replicate",
+  "{capi_replication, handle_pre_replicate}"},
+ {"_view_merge","{capi_view, handle_view_merge_req}"},
+ {"_spatial_merge","{capi_spatial, handle_view_merge_req}"},
+ {"_spatial_view","{spatial_http, handle_req}"}]
+
+
+(couchdb_n_0@127.0.0.1)3> couch_config:get("httpd_design_handlers").
+[{"_spatial","{capi_spatial, handle_view_req}"},
+ {"_info","{couch_httpd_db,   handle_design_info_req}"},
+ {"_view","{capi_view, handle_view_req}"}]
+(couchdb_n_0@127.0.0.1)4>
+
+(couchdb_n_0@127.0.0.1)8> couch_config:get("httpd_db_handlers").
+[{"_design","{couch_httpd_db, handle_design_req}"},
+ {"_compact","{couch_httpd_db, handle_compact_req}"},
+ {"_changes","{couch_httpd_db, handle_changes_req}"},
+ {"_all_docs","{capi_view, all_docs_db_req}"},
+ {"_view_cleanup",
+  "{couch_httpd_db, handle_view_cleanup_req}"}]
+
+DbFrontend:
+(couchdb_n_0@127.0.0.1)5> list_to_atom(couch_config:get("httpd", "db_frontend", "couch_db_frontend")).
+capi_frontend
+
+DefaultFun:
+couch_config:get("httpd", "default_handler", "{couch_httpd_db, handle_request}").
+"{couch_httpd_db, handle_request}"
+
+couch_httpd:handle_request
+1. calls one of the httpd_global_handlers
+2. or falls back to couch_httpd_db:handle_request
+
+couch_httpd_db:handle_request
+1. for one part url calls capi_frontend:do_db_req with db_req/2
+2. matches second part and uses handler from httpd_db_handlers for capi_frontend:do_db_req
+
+couch_httpd_db:db_req
+GET: returns capi_frontend:get_db_info(Db) - (used by 2.x xdcr checkpointing)
+POST: capi_frontend:update_doc(Db, Doc, []) - capi_ddoc_manager:update_doc(Name, Doc)
+
+capi_frontend:do_db_req
+1. verifies auth
+2. verifies bucket uuid
+3. executes handler
+
+---------------------------------------
+
+save view:
+PUT http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc
+
+show results:
+http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc/_view/abc?stale=false&inclusive_end=true&connection_timeout=60000&limit=10&skip=0&_=1440723244864
