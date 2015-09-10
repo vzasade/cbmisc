@@ -1,22 +1,28 @@
+------------------------------
+Built-in admin and "@" users
+------------------------------
+
+full_admin
+
 {cluster, get}
 {cluster, manage}
 {cluster, manage_nodes}
 {cluster, create_bucket}
 
-{{bucket, <bucket_name>}, get}
-{{bucket, <bucket_name>}, get_data}
-{{bucket, <bucket_name>}, get_password}
-{{bucket, <bucket_name>}, manage}
-{{bucket, <bucket_name>}, delete}
-{{bucket, <bucket_name>}, compact}
-{{bucket, <bucket_name>}, change_data}
-{{bucket, <bucket_name>}, recover}
+{{bucket, all}, get}
+{{bucket, all}, get_data}
+{{bucket, all}, get_password}
+{{bucket, all}, manage}
+{{bucket, all}, delete}
+{{bucket, all}, compact}
+{{bucket, all}, change_data}
+{{bucket, all}, recover}
 
 {{stats, overview}, get}
 {{stats, system}, get}
-{{stats, <bucket_name>}, get}
-{{stats, index, <bucket_name>}, get}
-{{stats, xdcr, <bucket_name>}, get}
+{{stats, all}, get}
+{{stats, index, all}, get}
+{{stats, xdcr, all}, get}
 {{stats, query}, get}
 
 {security, get}
@@ -24,9 +30,9 @@
 
 {logs, collect}
 
-{{views, <bucket_name>}, get}
-{{views, <bucket_name>}, compact}
-{{views, <bucket_name>}, manage}
+{{views, all}, get}
+{{views, all}, compact}
+{{views, all}, manage}
 
 {remote_clusters, get}
 {remote_clusters, manage}
@@ -43,9 +49,170 @@
 {xdcr_settings, get}
 {xdcr_settings, manage}
 
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
+
+----------------------------
+Read-only admin
+----------------------------
+
+{cluster, get}
+
+{{bucket, all}, get}
+{{bucket, all}, get_data}
+
+{{stats, overview}, get}
+{{stats, system}, get}
+{{stats, all}, get}
+{{stats, index, all}, get}
+{{stats, xdcr, all}, get}
+{{stats, query}, get}
+
+{{views, all}, get}
+{remote_clusters, get}
+{server_groups, get}
+{memcached, get}
+{indexes, get}
+{xdcr_settings, get}
+{{xdcr_replications, all}, get}
+
+------------------------------
+Cluster admin
+------------------------------
+
+{cluster, get}
+{cluster, manage}
+{cluster, manage_nodes}
+{cluster, create_bucket}
+
+{{bucket, all}, get}
+{{bucket, all}, get_data}
+{{bucket, all}, get_password}
+{{bucket, all}, manage}
+{{bucket, all}, delete}
+{{bucket, all}, compact}
+{{bucket, all}, change_data}
+{{bucket, all}, recover}
+
+{{stats, overview}, get}
+{{stats, system}, get}
+{{stats, all}, get}
+{{stats, index, all}, get}
+{{stats, xdcr, all}, get}
+{{stats, query}, get}
+
+{{views, all}, get}
+{{views, all}, compact}
+{{views, all}, manage}
+
+{remote_clusters, get}
+{remote_clusters, manage}
+
+{server_groups, get}
+{server_groups, manage}
+
+{memcached, get}
+{memcached, manage}
+
+{indexes, get}
+{indexes, manage}
+
+{xdcr_settings, get}
+{xdcr_settings, manage}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
+
+------------------------------
+Bucket admin for <bucket_name>
+------------------------------
+
+{cluster, get}
+
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_data}
+{{bucket, <bucket_name>}, get_password}
+{{bucket, <bucket_name>}, manage}
+{{bucket, <bucket_name>}, delete}
+{{bucket, <bucket_name>}, compact}
+{{bucket, <bucket_name>}, change_data}
+{{bucket, <bucket_name>}, recover}
+
+{{stats, overview}, get}
+{{stats, <bucket_name>}, get}
+{{stats, index, <bucket_name>}, get}
+{{stats, xdcr, <bucket_name>}, get}
+
+{{views, <bucket_name>}, get}
+{{views, <bucket_name>}, compact}
+{{views, <bucket_name>}, manage}
+
+{remote_clusters, get}
+
+{server_groups, get}
+
+{indexes, get}
+
 {{xdcr_replications, <bucket_name>}, get}
-{{xdcr_replications, <bucket_name>}, manage}
 {{xdcr_replications, <bucket_name>}, start_stop}
+
+------------------------------
+Views admin for <bucket_name>
+------------------------------
+
+{cluster, get}
+
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_data}
+
+{{stats, overview}, get}
+{{stats, index, <bucket_name>}, get}
+{{stats, query}, get}
+
+{{views, <bucket_name>}, get}
+{{views, <bucket_name>}, compact}
+{{views, <bucket_name>}, manage}
+
+{server_groups, get}
+
+{memcached, get}
+
+{indexes, get}
+{indexes, manage}
+
+-----------------------------------
+Replication admin
+-----------------------------------
+
+{cluster, get}
+
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_data}
+
+{{stats, overview}, get}
+{{stats, system}, get}
+{{stats, all}, get}
+{{stats, index, all}, get}
+{{stats, xdcr, all}, get}
+{{stats, query}, get}
+
+{remote_clusters, get}
+{remote_clusters, manage}
+
+{server_groups, get}
+
+{memcached, get}
+
+{indexes, get}
+
+{xdcr_settings, get}
+{xdcr_settings, manage}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
 
 ------------------------
 http://127.0.0.1:9000
