@@ -284,6 +284,7 @@ POST /settings/maxParallelIndexers
 POST /settings/viewUpdateDaemon
 {indexes, manage}
 
+PUT /settings/readOnlyUser
 POST /settings/readOnlyUser
 DELETE /settings/readOnlyUser
 POST /settings/saslauthdAuth
@@ -377,6 +378,8 @@ DELETE /pools/default/remoteClusters/<id>
 
 POST /pools/default/serverGroups
 DELETE /pools/default/serverGroups/<uuid>
+PUT /pools/default/serverGroups
+PUT /pools/default/serverGroups/<uuid>
 {server_groups, manage}
 
 POST /pools/default/settings/memcached/global
@@ -418,6 +421,9 @@ DELETE /pools/default/buckets/<bucket_name>
 GET /_metakv
 PUT /_metakv
 DELETE /_metakv
+internal users
+
+RPCCONNECT /
 internal users
 
 ------------------------
