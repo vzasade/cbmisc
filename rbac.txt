@@ -200,14 +200,29 @@ GET /versions
 any creds (any bucket):
 -----------------------
 
-GET /pools
-note: returns "isAdminCreds":true,"isROAdminCreds":false (hopefully used only by UI)
-{cluster, get}
+GET /diag
+GET /diag/vbuckets
+GET /diag/ale
+GET /diag/masterEvents
+full_admin
 
+
+
+GET /pools - note: returns "isAdminCreds":true,"isROAdminCreds":false (hopefully used only by UI)
 GET /pools/default
-{cluster, get}
-
 GET /pools/nodes
+GET /pools/default/nodeServices
+GET /pools/default/nodeServicesStreaming
+GET /nodeStatuses
+GET /settings/web
+GET /settings/alerts
+GET /settings/stats
+GET /settings/autoFailover
+GET /settings/autoCompaction
+GET /nodes/<node_id>
+GET /sampleBuckets
+GET /pools/default/rebalanceProgress
+GET /pools/default/tasks
 {cluster, get}
 
 GET /poolsStreaming/default (exposes otp cookie only to admin)
@@ -215,38 +230,32 @@ GET /poolsStreaming/default (exposes otp cookie only to admin)
 full_admin - for otp cookie
 
 GET /pools/default/buckets exposes bucket password
-{{bucket, <name>}, get}
-{{bucket, <name>}, get_password}
-
-all admin roles (not bucket passwords) (ro_admin)
--------------------------------------------------
-
-special handling:
------------------
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_password}
 
 GET /pools/default/saslBucketsStreaming
 {{bucket, <bucket_name>}, get_password}
 
 GET /pools/default/buckets/<name>
-{{bucket, <name>}, get}
-{{bucket, <name>}, get_password}
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_password}
 
 GET /pools/default/bucketsStreaming/<name>
-{{bucket, <name>}, get}
-{{bucket, <name>}, get_password}
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_password}
 
 GET /pools/default/buckets/<name>/ddocs
-{{views, <name>}, get}
+{{views, <bucket_name>}, get}
 
 GET /pools/default/buckets/<name>/docs
 GET /pools/default/buckets/<name>/docs/<doc_id>
-{{bucket, <name>}, get_data}
+{{bucket, <bucket_name>}, get_data}
 
 GET /_uistats
 GET /pools/default/buckets/<name>/stats
 GET /pools/default/buckets/<bucket_id>/nodes/<node_id>/stats
 {stats, get}
-{{bucket, <name>}, get_data} - for hot keys
+{{bucket, <bucket_name>}, get_data} - for hot keys
 
 GET /pools/default/overviewStats
 GET /pools/default/buckets/<name>/statsDirectory
@@ -260,11 +269,7 @@ GET /pools/default/buckets/<bucket_id>/stats/<stat_name>
 {stats, get}
 
 GET /pools/default/buckets/<name>/localRandomKey
-{{bucket, <name>}, get_data}
-
-GET /pools/default/nodeServices
-GET /pools/default/nodeServicesStreaming
-{cluster, get}
+{{bucket, <bucket_name>}, get_data}
 
 GET /pools/default/b/<bucket_name>
 GET /pools/default/bs/<bucket_name>
@@ -295,16 +300,6 @@ GET /sasl_logs/<log_name>
 {logs, collect}
 full admin, displays otp cookie
 
-GET /nodeStatuses
-GET /settings/web
-GET /settings/alerts
-GET /settings/stats
-GET /settings/autoFailover
-GET /settings/autoCompaction
-GET /nodes/<node_id>
-GET /sampleBuckets
-{cluster, get}
-
 GET /settings/maxParallelIndexers
 GET /settings/viewUpdateDaemon
 GET /indexStatus
@@ -329,16 +324,6 @@ GET /internalSettings
 
 GET /nodes/self/xdcrSSLPorts
 no auth
-
-GET /diag
-GET /diag/vbuckets
-GET /diag/ale
-GET /diag/masterEvents
-full admin
-
-GET /pools/default/rebalanceProgress
-GET /pools/default/tasks
-{cluster, get}
 
 POST /uilogin
 POST /uilogout
@@ -689,3 +674,5 @@ PUT http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc
 
 show results:
 http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc/_view/abc?stale=false&inclusive_end=true&connection_timeout=60000&limit=10&skip=0&_=1440723244864
+
+https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050/edit?usp=sharing
