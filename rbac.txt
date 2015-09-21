@@ -1,3 +1,23 @@
+{settings, read}
+{settings, write}
+
+{nodes, read}
+{nodes, write}
+
+{security, read}
+{security, write}
+
+{logs, read}
+
+{buckets, write}
+
+bucket[<name>].password
+
+
+{{bucket, <name>}, read}
+{{{bucket, <name>}, password}, read}
+
+
 ------------------------------
 Built-in admin and "@" users
 ------------------------------
@@ -549,34 +569,27 @@ menelaus_auth:is_bucket_accessible(BucketTuple, MochiReq);
 %% couch_httpd:verify_is_server_admin(Req)
 %% currently unsecured
 
-/_set_view/<name>/_cleanup -> couch_set_view:cleanup_index_files(mapreduce_view, Name),
-%% methods: POST
-%% currently unsecured
-
-/_set_view/<name>/_design/<ddoc_id>/_define
-%% methods: POST
-%% define view group (couch_set_view:define_group)
-%% currently unsecured
-
-/_set_view/<name>/_design/<ddoc_id>/_info
-%% methods: GET
-%% get view group info (couch_set_view:get_group_info)
-%% currently unsecured
-
-/_set_view/<name>/_design/<ddoc_id>/_btree_stats
-%% methods: GET
-%% currently unsecured
-
-/_set_view/<name>/_design/<ddoc_id>/_reset_utilization_stats
-%% methods: POST
-%% currently unsecured
-
-basically there are many of them /_set_view/<name>/_design/<ddoc_id>/......
-GET or POST and all of them unsecured
-
+%% currently unsecured _set_view apis: (couch_set_view_http)
+POST /_set_view/<name>/_cleanup -> couch_set_view:cleanup_index_files(mapreduce_view, Name),
+POST /_set_view/<name>/_design/<ddoc_id>/_define %% define view group (couch_set_view:define_group)
+GET /_set_view/<name>/_design/<ddoc_id>/_info %% get view group info (couch_set_view:get_group_info)
+GET /_set_view/<name>/_design/<ddoc_id>/_btree_stats
+POST /_set_view/<name>/_design/<ddoc_id>/_reset_utilization_stats
+GET /_set_view/<name>/_design/<ddoc_id>/_get_utilization_stats
+GET /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
+POST /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
+POST /_set_view/<name>/_design/<ddoc_id>/_compact/main
+POST /_set_view/<name>/_design/<ddoc_id>/_compact/replica
+POST /_set_view/<name>/_design/<ddoc_id>/_set_partition_states
+POST /_set_view/<name>/_design/<ddoc_id>/_add_replica_partitions
+POST /_set_view/<name>/_design/<ddoc_id>/_remove_replica_partitions
 
 /_spatial_view
 %% similar to _set_view and all unsecured
+
+GET /_spatial_view/<name>/_design/<ddoc_id>/_info
+GET /_spatial_view
+POST /_spatial_view
 
 -----------------------------------------
 default handler: couch_httpd_db, handle_request
