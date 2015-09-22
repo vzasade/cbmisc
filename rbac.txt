@@ -689,3 +689,476 @@ show results:
 http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc/_view/abc?stale=false&inclusive_end=true&connection_timeout=60000&limit=10&skip=0&_=1440723244864
 
 https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050/edit?usp=sharing
+
+
+-----------------------------------------
+
+Role Based Access Control in ns_server
+design document
+
+roles and access permissions
+
+Full admin and "@" users
+
+full_admin
+
+{cluster, get}
+{cluster, manage}
+{cluster, manage_nodes}
+{cluster, create_bucket}
+
+{{bucket, all}, get}
+{{bucket, all}, get_data}
+{{bucket, all}, get_password}
+{{bucket, all}, manage}
+{{bucket, all}, delete}
+{{bucket, all}, compact}
+{{bucket, all}, change_data}
+{{bucket, all}, recover}
+
+{stats, get}
+
+{security, get}
+{security, manage}
+
+{logs, collect}
+
+{{views, all}, get}
+{{views, all}, compact}
+{{views, all}, manage}
+
+{remote_clusters, get}
+{remote_clusters, manage}
+
+{server_groups, get}
+{server_groups, manage}
+
+{memcached, get}
+{memcached, manage}
+
+{indexes, get}
+{indexes, manage}
+
+{xdcr_settings, get}
+{xdcr_settings, manage}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
+
+Read-only admin
+
+{cluster, get}
+
+{{bucket, all}, get}
+
+{stats, get}
+
+{{views, all}, get}
+{remote_clusters, get}
+{server_groups, get}
+{memcached, get}
+{indexes, get}
+{xdcr_settings, get}
+{{xdcr_replications, all}, get}
+
+Cluster admin
+
+{cluster, get}
+{cluster, manage}
+{cluster, manage_nodes}
+{cluster, create_bucket}
+
+{{bucket, all}, get}
+{{bucket, all}, get_data}
+{{bucket, all}, get_password}
+{{bucket, all}, manage}
+{{bucket, all}, delete}
+{{bucket, all}, compact}
+{{bucket, all}, change_data}
+{{bucket, all}, recover}
+
+{stats, get}
+
+{{views, all}, get}
+{{views, all}, compact}
+{{views, all}, manage}
+
+{remote_clusters, get}
+{remote_clusters, manage}
+
+{server_groups, get}
+{server_groups, manage}
+
+{memcached, get}
+{memcached, manage}
+
+{indexes, get}
+{indexes, manage}
+
+{xdcr_settings, get}
+{xdcr_settings, manage}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
+
+Bucket admin for <bucket_name>
+
+{cluster, get}
+
+{{bucket, all}, get}
+{{bucket, <bucket_name>}, get_data}
+{{bucket, <bucket_name>}, get_password}
+{{bucket, <bucket_name>}, manage}
+{{bucket, <bucket_name>}, delete}
+{{bucket, <bucket_name>}, compact}
+{{bucket, <bucket_name>}, change_data}
+{{bucket, <bucket_name>}, recover}
+
+{stats, get}
+
+{{views, all}, get}
+{{views, <bucket_name>}, compact}
+{{views, <bucket_name>}, manage}
+
+{remote_clusters, get}
+
+{server_groups, get}
+
+{indexes, get}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, <bucket_name>}, start_stop}
+
+Views admin for <bucket_name>
+
+{cluster, get}
+
+{{bucket, all}, get}
+{{bucket, <bucket_name>}, get_data}
+
+{stats, get}
+
+{{views, all}, get}
+{{views, <bucket_name>}, compact}
+{{views, <bucket_name>}, manage}
+
+{server_groups, get}
+
+{memcached, get}
+
+{indexes, get}
+{indexes, manage}
+
+Replication admin
+
+{cluster, get}
+
+{{bucket, <bucket_name>}, get}
+{{bucket, <bucket_name>}, get_data}
+
+{stats, get}
+
+{remote_clusters, get}
+{remote_clusters, manage}
+
+{server_groups, get}
+
+{memcached, get}
+
+{indexes, get}
+
+{xdcr_settings, get}
+{xdcr_settings, manage}
+
+{{xdcr_replications, all}, get}
+{{xdcr_replications, all}, manage}
+{{xdcr_replications, all}, start_stop}
+ns_server rest api’s by access permissions
+
+No access control:
+
+GET /nodes/self/xdcrSSLPorts
+POST /uilogin
+POST /uilogout
+
+Permission: iddqd
+
+GET /diag
+GET /diag/vbuckets
+GET /diag/ale
+GET /diag/masterEvents
+POST /diag/eval
+
+Permission: internal
+
+POST /engageCluster2
+POST /completeJoin
+POST /node/controller/doJoinCluster
+POST /node/controller/doJoinClusterV2
+POST /node/controller/rename
+POST /nodes/<node>/controller/settings
+POST /node/controller/setupServices
+POST /settings/web
+POST /_cbauth
+POST /_log
+POST /_goxdcr/regexpValidation
+GET /_metakv
+PUT /_metakv
+DELETE /_metakv
+RPCCONNECT /
+
+Permission: {cluster, get}
+
+GET /pools
+GET /pools/default
+GET /pools/nodes
+GET /pools/default/nodeServices
+GET /pools/default/nodeServicesStreaming
+GET /nodeStatuses
+GET /settings/web
+GET /settings/alerts
+GET /settings/stats
+GET /settings/autoFailover
+GET /settings/autoCompaction
+GET /nodes/<node_id>
+GET /sampleBuckets
+GET /pools/default/rebalanceProgress
+GET /pools/default/tasks
+
+full_admin should be required to return otp cookie from this api:
+GET /poolsStreaming/default
+
+Permission: {cluster, manage}
+
+POST /settings/alerts
+POST /settings/alerts/testEmail
+POST /settings/stats (enable sending stats to remote server) is it even used?
+POST /settings/autoFailover
+POST /settings/autoFailover/resetCount
+POST /controller/setAutoCompaction
+POST /controller/resetAlerts
+POST /pools/default
+
+Permissions: {cluster, get}, {xdcr_settings, get}
+
+GET /internalSettings
+
+Permissions: {cluster, manage}, {xdcr_settings, manage}
+
+POST /internalSettings
+
+Permissions: {cluster, manage_nodes}
+
+POST /controller/ejectNode
+POST /controller/addNode
+POST /controller/addNodeV2
+POST /pools/default/serverGroups/<uuid>/addNode
+POST /pools/default/serverGroups/<uuid>/addNodeV2
+POST /controller/failOver
+POST /controller/startGracefulFailover
+POST /controller/rebalance
+POST /controller/reAddNode
+POST /controller/reFailOver
+POST /controller/stopRebalance
+POST /controller/setRecoveryType
+
+Permission: {cluster, create_bucket}
+
+POST /sampleBuckets/install
+POST /pools/default/buckets
+
+Permission: {{bucket, <bucket_name>}, get}
+
+GET /pools/default/b/<bucket_name>
+GET /pools/default/bs/<bucket_name>
+GET /pools/default/buckets/<bucket_name>/nodes
+GET /pools/default/buckets/<bucket_name>/nodes/<node_id>
+GET /dot/<bucket_name>
+GET /dotsvg/<bucket_name>
+
+Permission: {{bucket, <bucket_name>}, get_password}
+
+GET /pools/default/saslBucketsStreaming
+
+{{bucket, <bucket_name>}, get_password} should be required to return saslPassword:
+GET /pools/default/buckets
+GET /pools/default/buckets/<name>
+GET /pools/default/bucketsStreaming/<name>
+
+Permission: {{bucket, <bucket_name>}, manage}
+
+POST /pools/default/buckets/<bucket_name>
+
+Permission: {{bucket, <bucket_name>}, delete}
+
+POST /pools/default/buckets/<bucket_name>/controller/doFlush
+POST /pools/default/buckets/<bucket_name>/controller/unsafePurgeBucket
+DELETE /pools/default/buckets/<bucket_name>
+
+Permission: {{bucket, <bucket_name>}, compact}
+
+POST /pools/default/buckets/<bucket_name>/controller/compactBucket
+POST /pools/default/buckets/<bucket_name>/controller/cancelBucketCompaction
+POST /pools/default/buckets/<bucket_name>/controller/compactDatabases
+POST /pools/default/buckets/<bucket_name>/controller/cancelDatabasesCompaction
+
+Note: compactBucket includes views compaction
+
+Permission: {{bucket, <bucket_name>}, change_data}
+
+POST /pools/default/buckets/<bucket_name>/docs/<doc_id>
+DELETE /pools/default/buckets/<bucket_name>/docs/<doc_id>
+
+Permission: {{bucket, <bucket_name>}, recover}
+
+GET /pools/default/buckets/<name>/recoveryStatus
+POST /pools/default/buckets/<bucket_name>/controller/startRecovery
+POST /pools/default/buckets/<bucket_name>/controller/stopRecovery
+POST /pools/default/buckets/<bucket_name>/controller/commitVBucket
+
+Permission: {stats, get}
+
+GET /pools/default/overviewStats
+GET /pools/default/buckets/<name>/statsDirectory
+GET /pools/default/buckets/@query/stats
+GET /pools/default/buckets/@xdcr-<name>/stats
+GET /pools/default/buckets/@index-<name>/stats
+GET /pools/default/buckets/@query/nodes/<node_id>/stats
+GET /pools/default/buckets/@xdcr-<bucket_name>/nodes/<node_id>/stats
+GET /pools/default/buckets/@index-<bucket_name>/nodes/<node_id>/stats
+GET /pools/default/buckets/<bucket_id>/stats/<stat_name>
+
+For the following apis {{bucket, <bucket_name>}, get_data} is required to return hot keys:
+GET /_uistats
+GET /pools/default/buckets/<name>/stats
+GET /pools/default/buckets/<bucket_id>/nodes/<node_id>/stats
+
+Permission: {security, get}
+
+GET /pools/default/certificate
+GET /settings/readOnlyAdminName
+GET /settings/saslauthdAuth
+GET /settings/audit
+
+Permission: {security, manage}
+
+PUT /settings/readOnlyUser
+POST /settings/readOnlyUser
+DELETE /settings/readOnlyUser
+POST /settings/saslauthdAuth
+POST /settings/audit
+POST /validateCredentials
+POST /controller/regenerateCertificate
+
+Permission: {logs, collect}
+
+GET /logs
+GET /sasl_logs
+GET /sasl_logs/<log_name>
+POST /controller/startLogsCollection
+POST /controller/cancelLogsCollection
+
+Permission: {{views, <bucket_name>}, get}
+
+GET /pools/default/buckets/<name>/ddocs
+
+Permission: {{views, <bucket_name>}, compact}
+
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/compactView
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/cancelViewCompaction
+
+Permission: {{views, <bucket_name>}, manage}
+
+POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/setUpdateMinChanges
+
+Permission: {remote_clusters, get}
+
+GET /pools/default/remoteClusters
+
+Permission: {remote_clusters, manage}
+
+POST /pools/default/remoteClusters
+POST /pools/default/remoteClusters/<id>
+DELETE /pools/default/remoteClusters/<id>
+
+Permission: {server_groups, get}
+
+GET /pools/default/serverGroups
+
+Permission: {server_groups, manage}
+
+POST /pools/default/serverGroups
+DELETE /pools/default/serverGroups/<uuid>
+PUT /pools/default/serverGroups
+PUT /pools/default/serverGroups/<uuid>
+
+Permission: {memcached, get}
+
+GET /pools/default/settings/memcached/global
+GET /pools/default/settings/memcached/effective/<node>
+GET /pools/default/settings/memcached/node/<node>
+GET /pools/default/settings/memcached/node/<node>/setting/<name>
+
+Permission: {memcached, manage}
+
+POST /pools/default/settings/memcached/global
+POST /pools/default/settings/memcached/effective/<node>
+POST /pools/default/settings/memcached/node/<node>
+POST /pools/default/settings/memcached/node/<node>/setting/<name>
+DELETE /pools/default/settings/memcached/node/<node>/setting/<name>
+
+Permission: {indexes, get}
+
+GET /settings/maxParallelIndexers
+GET /settings/viewUpdateDaemon
+GET /indexStatus
+GET /settings/indexes
+
+Permission: {indexes, manage}
+
+POST /settings/maxParallelIndexers
+POST /settings/viewUpdateDaemon
+POST /settings/indexes
+
+Permission: {xdcr_settings, get}
+
+GET /settings/replications
+
+Permission: {xdcr_settings, manage}
+
+POST /settings/replications
+
+Permission: {{xdcr_replications, <bucket_name>}, get}
+
+GET /settings/replications/<id>
+
+Permission: {{xdcr_replications, <bucket_name>}, manage}
+
+POST /controller/createReplication
+POST /controller/cancelXDCR/<xid>
+POST /controller/cancelXCDR/<xid>
+DELETE /controller/cancelXDCR/<xid>
+DELETE /controller/cancelXCDR/<xid>
+
+Permission: {{xdcr_replications, <bucket_name>}, manage}, {{xdcr_replications, <bucket_name>}, start_stop}
+
+POST /settings/replications/<xid>
+
+Note: start_stop gives access to setting pauseRequested paremeter, manage to all other parameters
+
+Special treatment:
+
+POST /logClientError
+should be available to any user who can see the UI
+was restricted to full admin to prevent others from intentionally spamming the logs
+we should implement restriction on number of messages per second, and maybe create separate log file for it
+
+POST /couchBase/...
+DELETE /couchBase/...
+PUT /couchBase/...
+needs proper roles propagation so views access can be restricted in capi
+
+couchdb rest api’s by access permissions
+TBD
