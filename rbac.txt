@@ -875,7 +875,11 @@ Replication admin
 {{xdcr_replications, all}, get}
 {{xdcr_replications, all}, manage}
 {{xdcr_replications, all}, start_stop}
+
+
+-----------------------------------------------------------------
 ns_server rest api’s by access permissions
+-----------------------------------------------------------------
 
 No access control:
 
@@ -883,15 +887,28 @@ GET /nodes/self/xdcrSSLPorts
 POST /uilogin
 POST /uilogout
 
-Permission: iddqd
+Permission: {cluster.internal, all}
+
+POST /_cbauth
+POST /_log
+POST /_goxdcr/regexpValidation
+GET /_metakv
+PUT /_metakv
+DELETE /_metakv
+RPCCONNECT /
+
+Permission: {cluster.diag, read}
 
 GET /diag
 GET /diag/vbuckets
 GET /diag/ale
 GET /diag/masterEvents
+
+Permission: {cluster.diag, write}
+
 POST /diag/eval
 
-Permission: internal
+Permission: {cluster.setup, write}
 
 POST /engageCluster2
 POST /completeJoin
@@ -901,36 +918,48 @@ POST /node/controller/rename
 POST /nodes/<node>/controller/settings
 POST /node/controller/setupServices
 POST /settings/web
-POST /_cbauth
-POST /_log
-POST /_goxdcr/regexpValidation
-GET /_metakv
-PUT /_metakv
-DELETE /_metakv
-RPCCONNECT /
 
-Permission: {cluster, get}
+Permission: {cluster.pools, read}
 
 GET /pools
-GET /pools/default
+GET /pools/default (*)
+GET /poolsStreaming/default (*)
+(*) full_admin should be required to return otp cookie from these apis:
+
+Permission: {cluster.nodes, read}
+
 GET /pools/nodes
 GET /pools/default/nodeServices
 GET /pools/default/nodeServicesStreaming
 GET /nodeStatuses
+GET /nodes/<node_id>
+
+Permission: {cluster.samples, read}
+
+GET /sampleBuckets
+
+Permission: {cluster.settings, read}
+
 GET /settings/web
 GET /settings/alerts
 GET /settings/stats
 GET /settings/autoFailover
 GET /settings/autoCompaction
-GET /nodes/<node_id>
-GET /sampleBuckets
+GET /pools/default/settings/memcached/global
+GET /pools/default/settings/memcached/effective/<node>
+GET /pools/default/settings/memcached/node/<node>
+GET /pools/default/settings/memcached/node/<node>/setting/<name>
+
+Permission: {cluster.tasks, read}
+
 GET /pools/default/rebalanceProgress
 GET /pools/default/tasks
 
-full_admin should be required to return otp cookie from this api:
-GET /poolsStreaming/default
+Permission: {cluster.pools, write}
 
-Permission: {cluster, manage}
+POST /pools/default
+
+Permission: {cluster.settings, write}
 
 POST /settings/alerts
 POST /settings/alerts/testEmail
@@ -939,17 +968,21 @@ POST /settings/autoFailover
 POST /settings/autoFailover/resetCount
 POST /controller/setAutoCompaction
 POST /controller/resetAlerts
-POST /pools/default
+POST /pools/default/settings/memcached/global
+POST /pools/default/settings/memcached/effective/<node>
+POST /pools/default/settings/memcached/node/<node>
+POST /pools/default/settings/memcached/node/<node>/setting/<name>
+DELETE /pools/default/settings/memcached/node/<node>/setting/<name>
 
-Permissions: {cluster, get}, {xdcr_settings, get}
+Permissions: {cluster.settings, read} or {cluster.xdcr.settings, read}
 
 GET /internalSettings
 
-Permissions: {cluster, manage}, {xdcr_settings, manage}
+Permissions: {cluster.settings, write} or {cluster.xdcr.settings, write}
 
 POST /internalSettings
 
-Permissions: {cluster, manage_nodes}
+Permissions: {cluster.nodes, write}
 
 POST /controller/ejectNode
 POST /controller/addNode
@@ -964,12 +997,13 @@ POST /controller/reFailOver
 POST /controller/stopRebalance
 POST /controller/setRecoveryType
 
-Permission: {cluster, create_bucket}
+Permission: {cluster.bucket[all], create}
 
-POST /sampleBuckets/install
+POST /sampleBuckets/install (*)
 POST /pools/default/buckets
+(*) - also requires {cluster.samples, read}
 
-Permission: {{bucket, <bucket_name>}, get}
+Permission: {cluster.bucket[<bucket_name>].settings, read}
 
 GET /pools/default/b/<bucket_name>
 GET /pools/default/bs/<bucket_name>
@@ -977,27 +1011,26 @@ GET /pools/default/buckets/<bucket_name>/nodes
 GET /pools/default/buckets/<bucket_name>/nodes/<node_id>
 GET /dot/<bucket_name>
 GET /dotsvg/<bucket_name>
+GET /pools/default/buckets (*) (+)
+GET /pools/default/buckets/<name> (*)
+GET /pools/default/bucketsStreaming/<name> (*)
+(*) {cluster.bucket[<bucket_name>].password, read} is required to return saslPassword
 
-Permission: {{bucket, <bucket_name>}, get_password}
+Permission: {cluster.bucket[<bucket_name>].password, read}
 
 GET /pools/default/saslBucketsStreaming
 
-{{bucket, <bucket_name>}, get_password} should be required to return saslPassword:
-GET /pools/default/buckets
-GET /pools/default/buckets/<name>
-GET /pools/default/bucketsStreaming/<name>
-
-Permission: {{bucket, <bucket_name>}, manage}
+Permission: {cluster.bucket[<bucket_name>].settings, write}
 
 POST /pools/default/buckets/<bucket_name>
 
-Permission: {{bucket, <bucket_name>}, delete}
+Permission: {cluster.bucket[<bucket_name>], delete}
 
 POST /pools/default/buckets/<bucket_name>/controller/doFlush
 POST /pools/default/buckets/<bucket_name>/controller/unsafePurgeBucket
 DELETE /pools/default/buckets/<bucket_name>
 
-Permission: {{bucket, <bucket_name>}, compact}
+Permission: {cluster.bucket[<bucket_name>], compact}
 
 POST /pools/default/buckets/<bucket_name>/controller/compactBucket
 POST /pools/default/buckets/<bucket_name>/controller/cancelBucketCompaction
@@ -1006,43 +1039,46 @@ POST /pools/default/buckets/<bucket_name>/controller/cancelDatabasesCompaction
 
 Note: compactBucket includes views compaction
 
-Permission: {{bucket, <bucket_name>}, change_data}
+Permission: {cluster.bucket[<bucket_name>].data, write}
 
 POST /pools/default/buckets/<bucket_name>/docs/<doc_id>
 DELETE /pools/default/buckets/<bucket_name>/docs/<doc_id>
 
-Permission: {{bucket, <bucket_name>}, recover}
+Permission: {cluster.bucket[<bucket_name>].recovery, read}
 
 GET /pools/default/buckets/<name>/recoveryStatus
+
+Permission: {cluster.bucket[<bucket_name>].recovery, write}
+
 POST /pools/default/buckets/<bucket_name>/controller/startRecovery
 POST /pools/default/buckets/<bucket_name>/controller/stopRecovery
 POST /pools/default/buckets/<bucket_name>/controller/commitVBucket
 
-Permission: {stats, get}
+Permissions: {cluster.stats, read}
 
 GET /pools/default/overviewStats
 GET /pools/default/buckets/<name>/statsDirectory
 GET /pools/default/buckets/@query/stats
-GET /pools/default/buckets/@xdcr-<name>/stats
-GET /pools/default/buckets/@index-<name>/stats
+GET /pools/default/buckets/@xdcr-<bucket_name>/stats
+GET /pools/default/buckets/@index-<bucket_name>/stats
 GET /pools/default/buckets/@query/nodes/<node_id>/stats
 GET /pools/default/buckets/@xdcr-<bucket_name>/nodes/<node_id>/stats
 GET /pools/default/buckets/@index-<bucket_name>/nodes/<node_id>/stats
 GET /pools/default/buckets/<bucket_id>/stats/<stat_name>
 
-For the following apis {{bucket, <bucket_name>}, get_data} is required to return hot keys:
+For the following apis {cluster.bucket[<bucket_name>].data, read} is required to return hot keys:
 GET /_uistats
 GET /pools/default/buckets/<name>/stats
 GET /pools/default/buckets/<bucket_id>/nodes/<node_id>/stats
 
-Permission: {security, get}
+Permission: {cluster.security, read}
 
 GET /pools/default/certificate
 GET /settings/readOnlyAdminName
 GET /settings/saslauthdAuth
 GET /settings/audit
 
-Permission: {security, manage}
+Permission: {cluster.security, write}
 
 PUT /settings/readOnlyUser
 POST /settings/readOnlyUser
@@ -1052,7 +1088,7 @@ POST /settings/audit
 POST /validateCredentials
 POST /controller/regenerateCertificate
 
-Permission: {logs, collect}
+Permission: {cluster.logs, read}
 
 GET /logs
 GET /sasl_logs
@@ -1060,81 +1096,66 @@ GET /sasl_logs/<log_name>
 POST /controller/startLogsCollection
 POST /controller/cancelLogsCollection
 
-Permission: {{views, <bucket_name>}, get}
+Permission: {cluster.bucket[<bucket_name>].views, read}
 
-GET /pools/default/buckets/<name>/ddocs
+GET /pools/default/buckets/<bucket_name>/ddocs
 
-Permission: {{views, <bucket_name>}, compact}
+Permission: {cluster.bucket[<bucket_name>].views, compact}
 
 POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/compactView
 POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/cancelViewCompaction
 
-Permission: {{views, <bucket_name>}, manage}
+Permission: {cluster.bucket[<bucket_name>].views, write}
 
 POST /pools/default/buckets/<bucket_name>/ddocs/<doc_id>/controller/setUpdateMinChanges
 
-Permission: {remote_clusters, get}
+Permission: {cluster.xdcr.remote_clusters, read}
 
 GET /pools/default/remoteClusters
 
-Permission: {remote_clusters, manage}
+Permission: {cluster.xdcr.remote_clusters, write}
 
 POST /pools/default/remoteClusters
 POST /pools/default/remoteClusters/<id>
 DELETE /pools/default/remoteClusters/<id>
 
-Permission: {server_groups, get}
+Permission: {cluster.server_groups, read}
 
 GET /pools/default/serverGroups
 
-Permission: {server_groups, manage}
+Permission: {cluster.server_groups, write}
 
 POST /pools/default/serverGroups
 DELETE /pools/default/serverGroups/<uuid>
 PUT /pools/default/serverGroups
 PUT /pools/default/serverGroups/<uuid>
 
-Permission: {memcached, get}
-
-GET /pools/default/settings/memcached/global
-GET /pools/default/settings/memcached/effective/<node>
-GET /pools/default/settings/memcached/node/<node>
-GET /pools/default/settings/memcached/node/<node>/setting/<name>
-
-Permission: {memcached, manage}
-
-POST /pools/default/settings/memcached/global
-POST /pools/default/settings/memcached/effective/<node>
-POST /pools/default/settings/memcached/node/<node>
-POST /pools/default/settings/memcached/node/<node>/setting/<name>
-DELETE /pools/default/settings/memcached/node/<node>/setting/<name>
-
-Permission: {indexes, get}
+Permission: {cluster.indexes, read}
 
 GET /settings/maxParallelIndexers
 GET /settings/viewUpdateDaemon
 GET /indexStatus
 GET /settings/indexes
 
-Permission: {indexes, manage}
+Permission: {cluster.indexes, write}
 
 POST /settings/maxParallelIndexers
 POST /settings/viewUpdateDaemon
 POST /settings/indexes
 
-Permission: {xdcr_settings, get}
+Permission: {cluster.xdcr.settings, read}
 
 GET /settings/replications
 
-Permission: {xdcr_settings, manage}
+Permission: {cluster.xdcr.settings, write}
 
 POST /settings/replications
 
-Permission: {{xdcr_replications, <bucket_name>}, get}
+Permission: {cluster.bucket[<bucket_name>].xdcr, read}
 
 GET /settings/replications/<id>
 
-Permission: {{xdcr_replications, <bucket_name>}, manage}
+Permission: {cluster.bucket[<bucket_name>].xdcr, write}
 
 POST /controller/createReplication
 POST /controller/cancelXDCR/<xid>
@@ -1142,11 +1163,11 @@ POST /controller/cancelXCDR/<xid>
 DELETE /controller/cancelXDCR/<xid>
 DELETE /controller/cancelXCDR/<xid>
 
-Permission: {{xdcr_replications, <bucket_name>}, manage}, {{xdcr_replications, <bucket_name>}, start_stop}
+Permission: {cluster.bucket[<bucket_name>].xdcr, write} or {cluster.bucket[<bucket_name>].xdcr, execute}
 
 POST /settings/replications/<xid>
 
-Note: start_stop gives access to setting pauseRequested paremeter, manage to all other parameters
+Note: execute gives access to setting pauseRequested paremeter, manage to all other parameters
 
 Special treatment:
 
