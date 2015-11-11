@@ -1,0 +1,20 @@
+#!/bin/bash
+
+node_port=`expr 9000 + $1`
+erl_cookie=$(wget -O- -q --user Administrator --password asdasd --post-data="ns_server:get_babysitter_cookie()." http://127.0.0.1:$node_port/diag/eval; echo)
+
+erl_node=$(wget -O- -q --user Administrator --password asdasd --post-data="ns_node_disco:couchdb_node()." http://127.0.0.1:$node_port/diag/eval; echo)
+erl_node=${erl_node//\'}
+
+this_node="cb_node_$1@127.0.0.1"
+
+echo "Local node: $this_node"
+echo "Remote node: $erl_node"
+echo "Cookie: $erl_cookie"
+
+if [ -z "$erl_node" ]; then
+    echo "Node No. $1 is not started"
+    exit 1
+fi
+
+erl -name $this_node -remsh $erl_node -setcookie $erl_cookie
