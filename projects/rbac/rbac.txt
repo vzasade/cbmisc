@@ -1,11 +1,3 @@
-Watson Security Requirements:
-https://docs.google.com/document/d/1vfj4S3KDzOindlrTEpmAVnUFXMdv0LJW7UmhSjcrOZ4
-
-Design:
-https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050
-
-
-
 {settings, read}
 {settings, write}
 
