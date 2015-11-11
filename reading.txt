@@ -1,3 +1,8 @@
 Purely Functional Data Structures
 ---------------------------------
 http://www.cs.cmu.edu/~rwh/theses/okasaki.pdf
+
+SSL
+---
+http://security.stackexchange.com/questions/20803/how-does-ssl-tls-work
+http://security.stackexchange.com/questions/6290/how-is-it-possible-that-people-observing-an-https-connection-being-established-w
