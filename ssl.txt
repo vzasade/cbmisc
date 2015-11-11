@@ -1,0 +1,148 @@
+key generation algorithm
+------------------------
+that selects a private key uniformly at random from a set of possible private keys. The algorithm outputs the private key and a corresponding public key.
+
+signing algorithm
+-----------------
+that, given a message and a private key, produces a signature.
+
+signature verifying algorithm
+-----------------------------
+that, given the message, public key and signature, either accepts or rejects the message's claim to authenticity.
+
+certificate
+-----------
+The certificate is, nominally, a container for the public key. It includes the public key, the server name, some extra information about the server, and a signature computed by a certification authority.
+
+chain
+-----
+When the server sends its public key to a client, it actually sends its certificate, with a few other certificates (the certificate which contains the public key of the CA which signed its certificate, and the certificate for the CA which signed the CA's certificate, and so on). Certificates are intrinsically public objects.
+
+pfx
+---
+A ".pfx" file is a PKCS#12 archive: a bag which can contain a lot of objects with optional password protection; but, usually, a PKCS#12 archive contains a certificate (possibly with its assorted set of CA certificates) and the corresponding private key.
+
+------------------------------------------------------
+
+How does SSL/TLS work?
+http://security.stackexchange.com/questions/20803/how-does-ssl-tls-work
+
+How is it possible that people observing an HTTPS connection being established wouldn't know how to decrypt it?
+http://security.stackexchange.com/questions/6290/how-is-it-possible-that-people-observing-an-https-connection-being-established-w
+
+What’s in a certificate chain and why?
+https://unmitigatedrisk.com/?p=397
+
+How do SSL chains work?
+http://superuser.com/questions/347588/how-do-ssl-chains-work
+
+X.509
+https://en.wikipedia.org/wiki/X.509
+
+SSL Made Easy for Beginners
+https://info.ssl.com/ssl-made-easy-for-beginners/
+
+Configure mongod and mongos for TLS/SSL
+http://docs.mongodb.org/master/tutorial/configure-ssl/
+
+Examples of openssl commands:
+https://www.sslshopper.com/article-most-common-openssl-commands.html
+
+-------------------------------------------------------------------------
+
+view certificate
+
+openssl x509 -in myroot-ca.crt -text -noout
+
+generate root key and cert
+
+openssl genrsa -out myroot-ca.key 4096
+openssl req -new -x509 -days 1826 -key myroot-ca.key -out myroot-ca.crt
+
+generate intermediate cert
+
+openssl genrsa -out interm.key 4096
+openssl req -new -key interm.key -out interm.csr
+openssl x509 -req -days 730 -in interm.csr -CA myroot-ca.crt -CAkey myroot-ca.key -set_serial 01 -out interm.crt
+cat interm.crt myroot-ca.crt > chain.pem
+
+generate node cert
+
+openssl genrsa -out server.key 4096
+openssl req -new -key server.key -out server.csr
+openssl x509 -req -days 365 -in server.csr -CA interm.crt -CAkey interm.key -CAcreateserial -out server.crt
+openssl pkcs12 -export -out server.pfx -inkey server.key -in server.crt -certfile chain.pem
+
+Note: 
+
+verify:
+
+openssl verify -verbose -CAfile myroot-ca.crt  server.crt
+
+
+----------------------------------------------
+
+current files:
+
+all in data/n_0/config/
+
+local-ssl-cert.pem
+local-ssl-pkey.pem
+local-ssl-meta - needed to make sure that local cert was generated from cluster cert
+
+
+/// passed to query, ssl proxy, capi service, rest service
+ssl-cert-key.pem - local cert + local key
+ssl-cert-key.pem-ca - cluster cert
+
+memcached-key.pem - local key
+memcached-cert.pem - local cert + cluster cert
+
+configured in memcached.json
+"ssl":{"key":"/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-key.pem","cert":"/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-cert.pem"}}
+
+cluster cert management:
+ns_server_cert.erl
+
+local certificates management:
+ns_ssl_services_setup.erl
+
+
+-----------------------------
+
+https://127.0.0.1:19000/index.html
+
+
+PEM Format
+It is the most common format that Certificate Authorities issue certificates in. It contains the ‘—–BEGIN CERTIFICATE—–” and “—–END CERTIFICATE—–” statements.
+
+Several PEM certificates and even the Private key can be included in one file, one below the other. But most platforms(eg:- Apache) expects the certificates and Private key to be in separate files.
+> They are Base64 encoded ACII files
+> They have extensions such as .pem, .crt, .cer, .key
+> Apache and similar servers uses PEM format certificates
+
+PFX/PKCS#12
+They are used for storing the Server certificate, any Intermediate certificates & Private key in one encryptable file.
+> They are Binary format files
+> They have extensions .pfx, .p12
+> Typically used on Windows OS to import and export certificates and Private keys
+
+Convert PEM to PFX
+——————————————————————————————————————————————————
+$ openssl pkcs12 -export -out certificate.pfx -inkey privateKey.key -in certificate.crt -certfile CAcert.crt
+———————————————————————————————————————————
+
+Convert PFX to PEM
+——————————————————————————————–
+$ openssl pkcs12 -in certificate.pfx -out certificate.cer -nodes
+——————————————————————————————–
+
+NOTE: While converting PFX to PEM format, openssl will put all the Certificates and Private Key into a single file. You will need to open the file in Text editor and copy each Certificate & Private key(including the BEGIN/END statements) to its own individual text file and save them as certificate.cer, CAcert.cer, privateKey.key respectively.
+
+
+Chain:
+-----
+cat clustercert.pem intermediate_ca_cert.pem root_ca.pem >> cbasechain.pem 
+openssl pkcs12 -export -in cbasechain.pem -out cbasechain.pfx
+
+The certificates in the chain file MUST be ordered, with each certificate immediately following the certificate it signed, and the final well-known root CA certificate must thus be last.

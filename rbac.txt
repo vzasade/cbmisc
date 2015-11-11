@@ -1,3 +1,11 @@
+Watson Security Requirements:
+https://docs.google.com/document/d/1vfj4S3KDzOindlrTEpmAVnUFXMdv0LJW7UmhSjcrOZ4
+
+Design:
+https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050
+
+
+
 {settings, read}
 {settings, write}
 
@@ -1107,3 +1115,41 @@ needs proper roles propagation so views access can be restricted in capi
 
 couchdb rest api’s by access permissions
 TBD
+
+
+Proposal for upgrading cluster from self-signed generated certs to certs signed by CA, or from certs signed by OldCA to certs signed by CA:
+
+Let's agree that the cluster has a notion of Cluster CA which is the top level certificate that we display in UI, and which should be trusted by clients and xdcr. For self-signed generated certs it will equal to generated Cluster Certificate, otherwise it will be the top level CA in all node certificate chains.
+
+During the changing certificates from one Cluster CA to another there can be a temporary phase where different nodes of the cluster have different top level CA's. This will not cause downtime to the clients if the clients are configured to trust both CA and OldCA. This can cause downtime for XDCR only if XDCR replication is stopped and started before Remote Cluster is updated with new CA.
+
+The REST api that switches node from one cert to another should have the following parameters: Node cert, Node private key, Certificate chain that was used to sign node cert.
+
+1. Let's say the whole cluster is seeded with certificates signed by OldCA.
+2. We execute REST api on one node and switch the node to certificate signed by CA
+3. The REST api should succeed even if other nodes of the cluster are signed with OldCA
+4. The REST api call will also change Cluster CA from OldCA to CA
+5. After we upgraded the first node the UI will show CA, not OldCA as cluster CA, but in addition to this it will warn the user that certain nodes have old certificates that do not match cluster CA
+6. The warning on the UI will disappear after the whole cluster is upgraded to the certificates signed by CA
+7. Same UI we can use to warn the user about expired certificates or about certificates that will expire soon.
+
+This workflow allows us not to implement synchronous operations on the whole cluster which is always tricky and error prone.
+
+Since the certificate upgrade will most likely be scripted, we expect this intermediate phase to be very short on production clusters.
+
+Also this workflow will allow the user to switch just one node from OldCA to CA, make sure that it works and then either upgrade the whole cluster, or rollback the node to OldCA cert.
+
+
+RBAC:
+Defining roles and permissions in config
+Implementation of roles and permissions based auth
+Mapping permissions to existing REST API's
+REST api to assign roles to users
+Propagation of permissions to golang components
+Propagation of permissions to the UI (TBD)
+Upgrade of current admin and ro_admin roles
+
+CERTS:
+REST API to assign CA signed certificate to the node
+REST API to display root CA cert in UI
+Changes in Add Node handshake 
