@@ -116,30 +116,22 @@ main([]) ->
     %%application:start(public_key),
     %%application:start(ssl),
 
-    ChainPath = "/Users/artem/Work/cert/chain.pem",
-    CertPath  = "/Users/artem/Work/cert/server_correct.crt",
+    ChainPath = "/Users/artem/Work/cert/node_chain.pem",
+    CAPath  = "/Users/artem/Work/cert/myroot-ca.crt",
     KeyPath  = "/Users/artem/Work/cert/server.key",
 
-    {ok, RawCAChain} = file:read_file(ChainPath),
-    CAChainPemEntries = lists:reverse(public_key:pem_decode(RawCAChain)),
+    {ok, RawChain} = file:read_file(ChainPath),
+    ChainPemEntries = lists:reverse(public_key:pem_decode(RawChain)),
 
-    {ok, RawCert} = file:read_file(CertPath),
-    io:fwrite("~p~n", [RawCert]),
-    [RawCertPemEntry] = public_key:pem_decode(RawCert),
+    {ok, RawCA} = file:read_file(CAPath),
+    %%io:fwrite("~p~n", [RawCert]),
+    [CAPemEntry] = public_key:pem_decode(RawCA),
 
-    [RawRootCertPemEntry | RestOfTheChain] = CAChainPemEntries,
-    CertChain = RestOfTheChain ++ [RawCertPemEntry],
-
-    ToShowInUI = public_key:pem_encode([RawRootCertPemEntry]),
-
-    io:fwrite("ORIG:~n"),
-    print_chain(CAChainPemEntries),
     io:fwrite("CA:~n"),
-    print_chain([RawRootCertPemEntry]),
+    print_chain([CAPemEntry]),
     io:fwrite("CHAIN:~n"),
-    print_chain(CertChain),
+    print_chain(ChainPemEntries),
 
-    RV = validate(RawRootCertPemEntry, CertChain),
+    RV = validate(CAPemEntry, ChainPemEntries),
 
-    io:fwrite("~p~n+++++++++++++++++++++++++++++~n", [RV]),
-    io:fwrite("~p~n=============~p~n---------------------~n~p~n", [RawCAChain, RawRootCertPemEntry, CertChain]).
+    io:fwrite("~p~n+++++++++++++++++++++++++++++~n", [RV]).
