@@ -66,6 +66,11 @@ openssl req -new -key interm.key -out interm.csr
 openssl x509 -req -days 730 -in interm.csr -CA myroot-ca.crt -CAkey myroot-ca.key -set_serial 01 -out interm.crt
 cat interm.crt myroot-ca.crt > chain.pem
 
+chain for node
+--------------
+cat server_correct.crt interm.crt > node_chain.pem
+cat server_correct.crt interm.crt myroot-ca.crt > node_chain_with_root.pem
+
 generate node cert
 
 openssl genrsa -out server.key 4096
@@ -77,7 +82,9 @@ Note:
 
 verify:
 
-openssl verify -verbose -CAfile myroot-ca.crt  server.crt
+openssl verify -verbose -CAfile chain.pem  server.crt
+NO: openssl verify -verbose -CAfile myroot-ca.crt  server.crt
+NO: openssl verify -verbose -CAfile interm.crt  server.crt
 
 
 ----------------------------------------------
@@ -146,3 +153,52 @@ cat clustercert.pem intermediate_ca_cert.pem root_ca.pem >> cbasechain.pem
 openssl pkcs12 -export -in cbasechain.pem -out cbasechain.pfx
 
 The certificates in the chain file MUST be ordered, with each certificate immediately following the certificate it signed, and the final well-known root CA certificate must thus be last.
+
+Order in chain:
+http://blog.edgecloud.com/post/19519955133/ssl-certificate-chain-order-matters
+
+<your certificate>
+<your cert signer>
+<signer for your cert signer>
+<etc>
+
+The last one can be the root certificate, but technically, it doesn’t need to be in there, and I found some references around the web that certain poorly built SSL clients will fail out if the root certificate is in the file.
+
+
+Log
+---
+
+ip: 192.168.0.76
+
+public_key.erl
+ssl_certificate.erl
+
+Correct certificate server_correct.crt:
+subject=/C=US/ST=CA/L=San Francisco/O=Internet Widgits Pty Ltd/CN=192.168.0.76
+
+hostname validation library:
+https://github.com/benoitc/ssl_verify_hostname/blob/master/src/ssl_verify_hostname.erl
+
+ns_config
+---------
+
+{cluster_ca, [{pem, <pem encoded ca>},
+              {subject, <sub>},
+              {expires, <timestamp>}]}
+{{node, node(), cert}, [{validated, yes/no},
+                        {expires, <timestamp>}]}
+
+
+existing api
+------------
+
+GET /pools/default/certificate
+POST /controller/regenerateCertificate
+
+proposed api
+------------
+
+POST /controller/uploadClusterCA
+POST /controller/setNodeCertificate
+
+curl -X POST --data-binary "@/Users/artem/Work/cert/myroot-ca.crt" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
