@@ -202,3 +202,5 @@ POST /controller/uploadClusterCA
 POST /controller/setNodeCertificate
 
 curl -X POST --data-binary "@/Users/artem/Work/cert/myroot-ca.crt" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
+
+keytool -importcert -file gen.crt -keystore javakeystore
