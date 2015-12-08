@@ -47,21 +47,16 @@ format_attribute([#'AttributeTypeAndValue'{type = Type,
         undefined ->
             Acc;
         Str ->
-            case Acc of
-                [] ->
-                    [Str, "=", format_value(Value)];
-                _ ->
-                    [[", ", Str, "=", format_value(Value)] | Acc]
-            end
+            [lists:flatten([Str, "=", format_value(Value)]) | Acc]
     end.
 
 format_name(Name) ->
     %%Normalized = public_key:pkix_normalize_name(Name),
     {rdnSequence, STVList} = Name,
-    Bumpy = lists:foldl(fun (V, Acc) ->
-                                format_attribute(V, Acc)
-                        end, [], STVList),
-    lists:flatten(lists:reverse(Bumpy)).
+    Attributes = lists:foldl(fun (V, Acc) ->
+                                     format_attribute(V, Acc)
+                             end, [], STVList),
+    lists:flatten(string:join(lists:reverse(Attributes), ", ")).
 
 attribute_string(?'id-at-countryName') ->
     "C";
@@ -105,10 +100,21 @@ validate({'Certificate', RootCertDer, not_encrypted}, Chain) ->
                         TBSCert = OtpCert#'OTPCertificate'.tbsCertificate,
                         Subject = format_name(TBSCert#'OTPTBSCertificate'.subject),
                         io:fwrite("<<<<<<<<<<<<<~n~p~n", [{Subject, Event, State}]),
-                        {valid, []}
+                        case Event of
+                            {extension, E} ->
+                                {unknown, State};
+                            _ ->
+                                {valid, []}
+                        end
                 end,
 
     public_key:pkix_path_validation(RootCertDer, DerChain, [{verify_fun, {VerifyVun, []}}]).
+
+print_chain_from_file(Name, Path) ->
+    io:fwrite("~s:~n", [Name]),
+    {ok, Raw} = file:read_file(Path),
+    PemEntries = public_key:pem_decode(Raw),
+    print_chain(PemEntries).
 
 main([]) ->
     %%application:start(crypto),
@@ -116,9 +122,10 @@ main([]) ->
     %%application:start(public_key),
     %%application:start(ssl),
 
-    ChainPath = "/Users/artem/Work/cert/node_chain.pem",
+    ChainPath = "/Users/artem/Work/cert/node_chain_with_root.pem",
     CAPath  = "/Users/artem/Work/cert/myroot-ca.crt",
     KeyPath  = "/Users/artem/Work/cert/server.key",
+    MemChainPath = "/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-cert.pem",
 
     {ok, RawChain} = file:read_file(ChainPath),
     ChainPemEntries = lists:reverse(public_key:pem_decode(RawChain)),
@@ -134,4 +141,7 @@ main([]) ->
 
     RV = validate(CAPemEntry, ChainPemEntries),
 
-    io:fwrite("~p~n+++++++++++++++++++++++++++++~n", [RV]).
+    io:fwrite("~p~n+++++++++++++++++++++++++++++~n", [RV]),
+
+    print_chain_from_file("MEMCACHED CHAIN", "/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-cert.pem"),
+    print_chain_from_file("GENERATED LOCAL", "/Users/artem/Work/watson/ns_server/data/n_0/config/local-ssl-cert.pem").

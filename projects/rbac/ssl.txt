@@ -203,4 +203,42 @@ POST /controller/setNodeCertificate
 
 curl -X POST --data-binary "@/Users/artem/Work/cert/myroot-ca.crt" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
 
+curl -X POST --data "chain=/Users/artem/Work/cert/node_chain.pem&pkey=/Users/artem/Work/cert/server.key" http://Administrator:asdasd@127.0.0.1:9000/controller/setNodeCertificate
+
+
 keytool -importcert -file gen.crt -keystore javakeystore
+keytool -importcert -file myroot-ca.crt -alias superca -keystore javakeystore
+keytool -list -keystore javakeystore
+
+
+------------------------------------------------
+
+Uploaded:
+MEMCACHED CHAIN:
+Subject: "C=US, ST=CA, L=San Francisco, O=Internet Widgits Pty Ltd, CN=192.168.0.76"
+Issuer: "C=US, ST=CA, L=San Francisco, O=Not That Important Authority"
+Validity: {{{2015,11,13},{22,27,28}},{{2016,11,12},{22,27,28}}}
+********
+Subject: "C=US, ST=CA, L=San Francisco, O=Not That Important Authority"
+Issuer: "C=US, ST=CA, L=San Francisco, O=Super Root Authority"
+Validity: {{{2015,10,5},{0,36,31}},{{2017,10,4},{0,36,31}}}
+********
+Subject: "C=US, ST=CA, L=San Francisco, O=Super Root Authority"
+Issuer: "C=US, ST=CA, L=San Francisco, O=Super Root Authority"
+Validity: {{{2015,10,5},{0,31,56}},{{2020,10,4},{0,31,56}}}
+*
+
+Generated:
+MEMCACHED CHAIN:
+Subject: "CN=127.0.0.1"
+Issuer: "CN=Couchbase Server 0df4efb8"
+Validity: {{{2013,1,1},{0,0,0}},{{2049,12,31},{23,59,59}}}
+********
+Subject: "CN=Couchbase Server 0df4efb8"
+Issuer: "CN=Couchbase Server 0df4efb8"
+Validity: {{{2013,1,1},{0,0,0}},{{2049,12,31},{23,59,59}}}
+
+
+Exception for uploaded chain
+
+Caused by: sun.security.validator.ValidatorException: No trusted certificate found
