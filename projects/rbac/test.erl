@@ -139,6 +139,8 @@ main([]) ->
     io:fwrite("CHAIN:~n"),
     print_chain(ChainPemEntries),
 
+    io:fwrite("BIN: ~p~n", [public_key:pem_encode(ChainPemEntries)]),
+
     RV = validate(CAPemEntry, ChainPemEntries),
 
     io:fwrite("~p~n+++++++++++++++++++++++++++++~n", [RV]),

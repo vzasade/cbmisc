@@ -73,7 +73,7 @@ cat server_correct.crt interm.crt myroot-ca.crt > node_chain_with_root.pem
 
 generate node cert
 
-openssl genrsa -out server.key 4096
+openssl genrsa -out server.key 4096     
 openssl req -new -key server.key -out server.csr
 openssl x509 -req -days 365 -in server.csr -CA interm.crt -CAkey interm.key -CAcreateserial -out server.crt
 openssl pkcs12 -export -out server.pfx -inkey server.key -in server.crt -certfile chain.pem
@@ -205,6 +205,8 @@ curl -X POST --data-binary "@/Users/artem/Work/cert/myroot-ca.crt" http://Admini
 
 curl -X POST --data "chain=/Users/artem/Work/cert/node_chain.pem&pkey=/Users/artem/Work/cert/server.key" http://Administrator:asdasd@127.0.0.1:9000/controller/setNodeCertificate
 
+curl -X POST --data "chain=/Users/artem/Work/cert/localhost_chain.pem&pkey=/Users/artem/Work/cert/server.key" http://Administrator:asdasd@127.0.0.1:9000/controller/setNodeCertificate
+
 
 keytool -importcert -file gen.crt -keystore javakeystore
 keytool -importcert -file myroot-ca.crt -alias superca -keystore javakeystore
@@ -228,6 +230,10 @@ Issuer: "C=US, ST=CA, L=San Francisco, O=Super Root Authority"
 Validity: {{{2015,10,5},{0,31,56}},{{2020,10,4},{0,31,56}}}
 *
 
+CI
+
+IC
+
 Generated:
 MEMCACHED CHAIN:
 Subject: "CN=127.0.0.1"
@@ -242,3 +248,67 @@ Validity: {{{2013,1,1},{0,0,0}},{{2049,12,31},{23,59,59}}}
 Exception for uploaded chain
 
 Caused by: sun.security.validator.ValidatorException: No trusted certificate found
+
+
+New way to generate certs:
+--------------------------
+go run gencert.go -store-to=/Users/artem/Work/cert/newcerts/root -common-name=Root\ Authority
+go run gencert.go -store-to=/Users/artem/Work/cert/newcerts/interm -sign-with=/Users/artem/Work/cert/newcerts/root -common-name=Intemediate\ Authority
+go run gencert.go -store-to=/Users/artem/Work/cert/newcerts/local -sign-with=/Users/artem/Work/cert/newcerts/interm -common-name=127.0.0.1 -final=true
+
+cat local.crt interm.crt > long_chain.pem
+
+curl -X POST --data "chain=/Users/artem/Work/cert/newcerts/long_chain.pem&pkey=/Users/artem/Work/cert/newcerts/local.key" http://Administrator:asdasd@127.0.0.1:9000/controller/setNodeCertificate
+
+short chain
+-----------
+go run gencert.go -store-to=/Users/artem/Work/cert/newcerts/simple -sign-with=/Users/artem/Work/cert/newcerts/root -common-name=127.0.0.1 -final=true
+curl -X POST --data "chain=/Users/artem/Work/cert/newcerts/simple.crt&pkey=/Users/artem/Work/cert/newcerts/simple.key" http://Administrator:asdasd@127.0.0.1:9000/controller/setNodeCertificate
+
+
+curl -X POST --data-binary "@/Users/artem/Work/cert/newcerts/root.crt" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
+
+---------------------------------------------------------------------
+GENERATED
+---------------------------------------------------------------------
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            14:1d:bd:f5:35:f1:2b:7a
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: CN=Couchbase Server 0df4efb8
+        Validity
+            Not Before: Jan  1 00:00:00 2013 GMT
+            Not After : Dec 31 23:59:59 2049 GMT
+        Subject: CN=127.0.0.1
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (1024 bit)
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Digital Signature, Key Encipherment
+            X509v3 Extended Key Usage: 
+                TLS Web Server Authentication
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Subject Alternative Name: 
+                IP Address:127.0.0.1
+    Signature Algorithm: sha256WithRSAEncryption
+
+
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number:
+            cc:9c:6a:79:97:95:aa:0f
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: C=US, ST=CA, L=San Francisco, O=Not That Important Authority
+        Validity
+            Not Before: Dec  7 21:37:10 2015 GMT
+            Not After : Dec  6 21:37:10 2016 GMT
+        Subject: C=AU, ST=Some-State, O=Internet Widgits Pty Ltd, CN=127.0.0.1
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (4096 bit)
+    Signature Algorithm: sha1WithRSAEncryption
