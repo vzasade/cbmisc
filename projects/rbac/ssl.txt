@@ -312,3 +312,109 @@ Certificate:
             Public Key Algorithm: rsaEncryption
             RSA Public Key: (4096 bit)
     Signature Algorithm: sha1WithRSAEncryption
+
+-----------------------------------
+
+node: engageCluster2 - engage_cluster
+
+cluster : do_add_node_engaged
+
+------------------------------------------
+
+REFRESH:
+ns_ssl_services_setup.erl
+
+set_node_certificate_chain
+delete {node, node(), cert}
+write files
+ns_config:set({node, node(), cert}, Props),
+
+
+
+
+case ns_config:search(Config, {node, Node, cert}) of
+{value, Props}
+
+
+
+
+ls ~/Work/watson/ns_server/data/n_0/
+
+
+
+latest
+------
+
+curl -X GET http://Administrator:asdasd@127.0.0.1:9000/pools/default/certificate
+
+
+curl -X POST --data-binary "@/Users/artem/Work/cert/newcerts/root.crt" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
+
+mkdir ~/Work/watson/ns_server/data/n_0/inbox
+
+cp /Users/artem/Work/cert/newcerts/long_chain.pem ~/Work/watson/ns_server/data/n_0/inbox/chain.pem
+
+cp /Users/artem/Work/cert/newcerts/local.key ~/Work/watson/ns_server/data/n_0/inbox/pkey.pem
+
+curl -X POST http://Administrator:asdasd@127.0.0.1:9000/node/controller/reloadCertificate
+
+
+
+TypeError: Cannot read property 'isAuthenticated' of undefined
+    at http://127.0.0.1:9000/ui/app/app.js:48:18
+    at processQueue (http://127.0.0.1:9000/ui/libs/angular.js:14634:28)
+    at http://127.0.0.1:9000/ui/libs/angular.js:14650:27
+    at Scope.$eval (http://127.0.0.1:9000/ui/libs/angular.js:15916:28)
+    at Scope.$digest (http://127.0.0.1:9000/ui/libs/angular.js:15727:31)
+    at Scope.$apply (http://127.0.0.1:9000/ui/libs/angular.js:16024:24)
+    at done (http://127.0.0.1:9000/ui/libs/angular.js:10511:47)
+    at completeRequest (http://127.0.0.1:9000/ui/libs/angular.js:10683:7)
+    at XMLHttpRequest.requestLoaded (http://127.0.0.1:9000/ui/libs/angular.js:10624:9)
+
+
+--------------------------------------------------------------------------------
+
+REST API's for managing certificates:
+
+GET /pools/default/certificate
+
+Returns current Cluster CA. Without parameters works the same way as it worked pre Watson.
+With parameter extended=true returns extended certificate info:
+{"cert": {"type" : ..., "pem" : ..., "subject" : ..., "expires" : ...}, warnings: []}
+type - generated or uploaded
+pem - pem encoded certificate
+subject - abbreviated certificate subject
+expires - expiration data
+warnings - warnings to be displayed in UI
+
+example:
+$ curl -X GET http://user:password@127.0.0.1:9000/pools/default/certificate?extended=true
+
+{"cert":{"type":"uploaded","pem":"-----BEGIN CERTIFICATE-----\nMIIC6DCCAdKgAwIBAgIIFB4YAjF90MgwCwYJKoZIhvcNAQELMBkxFzAVBgNVBAMT\nDlJvb3QgQXV0aG9yaXR5MB4XDTEzMDEwMTAwMDAwMFoXDTQ5MTIzMTIzNTk1OVow\nGTEXMBUGA1UEAxMOUm9vdCBBdXRob3JpdHkwggEiMA0GCSqGSIb3DQEBAQUAA4IB\nDwAwggEKAoIBAQDBum06stdiYQI2HQyjZeg3s0Pz8CziXqSg4GicaeKNloOfASwl\n+8LQDX5Dgb+Mc4ZxXYo9/7eVlsvSiZPZcv9D2pubjR4ZtEDY5t9AlXDiYTHK0zxG\nB34Llnz3gJmkAEAsjy4g+RfwpJS4kGVzFhrzgxOQJIJogZnLduk+mHFjyXI3X+8y\nf4KF8ijrXP8bbfa0kM1tjvcttaK7vTEP+G/mbOEFZErhScXT9eKRlgwsitaH7kI0\nimpqg3YX1znLQ5n+eLzeVR1HhszJrFaaaRHL0esml6jLEcZBBitJSuEuaMLp9ZWB\nA479ZHmN/vZc1SwfMrCE2+TE0ytW3O7eFXjXAgMBAAGjODA2MA4GA1UdDwEB/wQE\nAwIApDATBgNVHSUEDDAKBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MAsGCSqG\nSIb3DQEBCwOCAQEACReNkvIXhjPO0rWpgdVSqnLrjUb6DJf0n4Uyq6PfukeEfBtF\n59L+xUcoY6NFM5N6qRlGgg0eqTCVmQ6N6lKnnZRH23g3BPLjU2EqAtBHIc5f2JoM\nd1E4UD2v20MlFoeHL0YljGTywlqStoZYc2uYUJnJAVq2D1dWcwP2S7G6caLHMlAl\nQVYIZvjCGuqGckV1EqOTT7uKPH9ulljtYKVIq/aTbINjX0hJsaoN2hOfHVTp2Shq\neLMwgfNdg6zWRyeL/Mi/3jmSjSH61zyHva2xlY8Pl6Zurx/+pF1qN27+P8tCjsDO\nD2hAADXr8WRqC1Sd+xAGcFkvqOOFv/HRxDej3A==\n-----END CERTIFICATE-----\n","subject":"CN=Root Authority","expires":"2049-12-31T15:59:59.000Z"},"warnings":[{"node":"n_0@127.0.0.1","message":"Certificate is not signed with cluster CA."}]}
+
+Possible warmnings:
+{"node":"n_0@127.0.0.1","message":"Certificate is not signed with cluster CA."}
+{"node":"n_0@127.0.0.1","message":"Certificate is expired."}
+{"node":"n_0@127.0.0.1","message":"Certificate will expire soon.","expires":"2049-12-31T15:59:59.000Z"}
+
+POST /controller/uploadClusterCA
+
+Uploads root certificate (Cluster CA) to the cluster. That certificate will be displayed in UI and used for XDCR replications and for clients certificate stores.
+
+example:
+curl -X POST --data-binary "@/path/root.crt" http://user:password@127.0.0.1:9000/controller/uploadClusterCA
+
+returns:
+Same output as GET /pools/default/certificate?extended=true
+
+POST /node/controller/reloadCertificate
+
+Grabs chain.pem and pkey.pem from the <data folder>/inbox/ directory and applies them to the node.
+
+example:
+curl -X POST http://user:password@127.0.0.1:9000/node/controller/reloadCertificate
+
+Returns:
+200 - if success
+400 with errpor message if failed. 
+
