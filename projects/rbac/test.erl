@@ -47,7 +47,7 @@ format_attribute([#'AttributeTypeAndValue'{type = Type,
         undefined ->
             Acc;
         Str ->
-            [lists:flatten([Str, "=", format_value(Value)]) | Acc]
+            [[Str, "=", format_value(Value)] | Acc]
     end.
 
 format_name(Name) ->
@@ -116,7 +116,7 @@ print_chain_from_file(Name, Path) ->
     PemEntries = public_key:pem_decode(Raw),
     print_chain(PemEntries).
 
-main([]) ->
+main_oo([]) ->
     %%application:start(crypto),
     %%application:start(asn1),
     %%application:start(public_key),
@@ -147,3 +147,37 @@ main([]) ->
 
     print_chain_from_file("MEMCACHED CHAIN", "/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-cert.pem"),
     print_chain_from_file("GENERATED LOCAL", "/Users/artem/Work/watson/ns_server/data/n_0/config/local-ssl-cert.pem").
+
+main([]) ->
+    CAPath  = "/Users/artem/Work/cert/apple.pem",
+    {ok, RawCA} = file:read_file(CAPath),
+
+    io:fwrite("BLAH ~p~n",
+              [public_key:pem_decode(RawCA)]),
+
+    [CAPemEntry] = public_key:pem_decode(RawCA),
+
+    {'Certificate', DerCert, not_encrypted} = CAPemEntry,
+    Decoded = public_key:pkix_decode_cert(DerCert, otp),
+    TBSCert = Decoded#'OTPCertificate'.tbsCertificate,
+    SignatureAlgorithm = Decoded#'OTPCertificate'.signatureAlgorithm,
+    SignatureAlgorithmId = SignatureAlgorithm#'SignatureAlgorithm'.algorithm,
+    io:fwrite("signatureAlgorithm: ~p ~p~n",
+              [SignatureAlgorithmId, public_key:pkix_sign_types(SignatureAlgorithmId)]),
+
+
+
+    PKInfo = TBSCert#'OTPTBSCertificate'.subjectPublicKeyInfo,
+    PKAlgorithm = PKInfo#'OTPSubjectPublicKeyInfo'.algorithm,
+    PKey = PKInfo#'OTPSubjectPublicKeyInfo'.subjectPublicKey,
+
+
+    io:fwrite("MOD: ~p~n",
+              [length(integer_to_list(PKey#'RSAPublicKey'.modulus))]),
+
+    {_, SigBin} = Decoded#'OTPCertificate'.signature,
+    io:fwrite("signature: ~p, ~p~n",
+              [size(SigBin), SigBin]),
+
+    io:fwrite("PKAlgorithm: ~p~n",
+              [PKAlgorithm#'PublicKeyAlgorithm'.algorithm]).
