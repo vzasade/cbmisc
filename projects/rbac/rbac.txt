@@ -534,164 +534,7 @@ internal users
 RPCCONNECT /
 internal users
 
-------------------------
-http://127.0.0.1:9500
-------------------------
-
-capi_frontend:verify_bucket_auth
---------------------------------
-"Capi-Auth-Token" = cookie (set by capi_http_proxy after succesfull auth by menelaus if /couchBase is used)
-or
-menelaus_auth:is_bucket_accessible(BucketTuple, MochiReq);
-
-/
-%%{"couchdb":"Welcome","version":"2.1.1r-506-gb1a22b8","couchbase":"4.0.0r-826-g0301cac-enterprise"}
-%% no auth, method is irrelevant
-
-/_pre_replicate
-/_mass_vbopaque_check
-/_commit_for_checkpoint
-%% sent to target xdcr node during xdcr replication
-%% we use POST method, but method is not enforced, though it has to have body
-%% auth: capi_frontend:verify_bucket_auth(Req, Bucket)
-
-
-/_spatial_merge
-/_view_merge
-%% methods: POST, GET, HEAD
-%% only user "@ns_server"/otp_cookie is allowed
-%% anonymous access in pre 4.0 clusters
-%% MB-8872 add security to endpoints
-%% called only by capi_indexer.erl
-
-/_active_tasks
-%% methods: GET, HEAD
-%% couch_httpd:verify_is_server_admin(Req)
-%% currently unsecured
-
-%% currently unsecured _set_view apis: (couch_set_view_http)
-POST /_set_view/<name>/_cleanup -> couch_set_view:cleanup_index_files(mapreduce_view, Name),
-POST /_set_view/<name>/_design/<ddoc_id>/_define %% define view group (couch_set_view:define_group)
-GET /_set_view/<name>/_design/<ddoc_id>/_info %% get view group info (couch_set_view:get_group_info)
-GET /_set_view/<name>/_design/<ddoc_id>/_btree_stats
-POST /_set_view/<name>/_design/<ddoc_id>/_reset_utilization_stats
-GET /_set_view/<name>/_design/<ddoc_id>/_get_utilization_stats
-GET /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
-POST /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
-POST /_set_view/<name>/_design/<ddoc_id>/_compact/main
-POST /_set_view/<name>/_design/<ddoc_id>/_compact/replica
-POST /_set_view/<name>/_design/<ddoc_id>/_set_partition_states
-POST /_set_view/<name>/_design/<ddoc_id>/_add_replica_partitions
-POST /_set_view/<name>/_design/<ddoc_id>/_remove_replica_partitions
-
-/_spatial_view
-%% similar to _set_view and all unsecured
-
-GET /_spatial_view/<name>/_design/<ddoc_id>/_info
-GET /_spatial_view
-POST /_spatial_view
-
------------------------------------------
-default handler: couch_httpd_db, handle_request
------------------------------------------
-
-GET /<bucket>%2F<vbucket>
-{"db_name":"buck/1","instance_start_time":"1441680033"} //used by 2.x xdcr checkpointing
-
-POST /<bucket>
-DbFrontend:update_doc
-
-/<db_name>
-capi_frontend:do_db_req(Req, fun db_req/2);
-
-/<db_name>/<db_handler>/....
-capi_frontend:do_db_req(Req, Handler);
-
-do_db_req:
-verify_bucket_auth(Req, BucketName) - either "Capi-Auth-Token" or menelaus_auth:is_bucket_accessible
-verify_bucket_uuid(BucketConfig, UUID)
-
-
-path_parts = [<<"buck">>,<<"_design">>,<<"dev_doccc">>]
-dbname = <<"buck">>
-GET /buck/_design/dev_doccc?_=1441680058670 404
-
-
-
-
-Notes:
-- need to do identity propagation from capi_http_proxy to capi_frontend:verify_bucket_auth
-
-
-
-(couchdb_n_0@127.0.0.1)1> couch_config:get("httpd_global_handlers").
-[{"_set_view","{couch_set_view_http, handle_req}"},
- {"_active_tasks",
-  "{couch_httpd_misc_handlers, handle_task_status_req}"},
- {"_mass_vbopaque_check",
-  "{capi_replication, handle_mass_vbopaque_check}"},
- {"_commit_for_checkpoint",
-  "{capi_replication, handle_commit_for_checkpoint}"},
- {"/",
-  "{couch_httpd_misc_handlers, handle_welcome_req, <<\"Welcome\">>}"},
- {"_pre_replicate",
-  "{capi_replication, handle_pre_replicate}"},
- {"_view_merge","{capi_view, handle_view_merge_req}"},
- {"_spatial_merge","{capi_spatial, handle_view_merge_req}"},
- {"_spatial_view","{spatial_http, handle_req}"}]
-
-
-(couchdb_n_0@127.0.0.1)3> couch_config:get("httpd_design_handlers").
-[{"_spatial","{capi_spatial, handle_view_req}"},
- {"_info","{couch_httpd_db,   handle_design_info_req}"},
- {"_view","{capi_view, handle_view_req}"}]
-(couchdb_n_0@127.0.0.1)4>
-
-(couchdb_n_0@127.0.0.1)8> couch_config:get("httpd_db_handlers").
-[{"_design","{couch_httpd_db, handle_design_req}"},
- {"_compact","{couch_httpd_db, handle_compact_req}"},
- {"_changes","{couch_httpd_db, handle_changes_req}"},
- {"_all_docs","{capi_view, all_docs_db_req}"},
- {"_view_cleanup",
-  "{couch_httpd_db, handle_view_cleanup_req}"}]
-
-DbFrontend:
-(couchdb_n_0@127.0.0.1)5> list_to_atom(couch_config:get("httpd", "db_frontend", "couch_db_frontend")).
-capi_frontend
-
-DefaultFun:
-couch_config:get("httpd", "default_handler", "{couch_httpd_db, handle_request}").
-"{couch_httpd_db, handle_request}"
-
-couch_httpd:handle_request
-1. calls one of the httpd_global_handlers
-2. or falls back to couch_httpd_db:handle_request
-
-couch_httpd_db:handle_request
-1. for one part url calls capi_frontend:do_db_req with db_req/2
-2. matches second part and uses handler from httpd_db_handlers for capi_frontend:do_db_req
-
-couch_httpd_db:db_req
-GET: returns capi_frontend:get_db_info(Db) - (used by 2.x xdcr checkpointing)
-POST: capi_frontend:update_doc(Db, Doc, []) - capi_ddoc_manager:update_doc(Name, Doc)
-
-capi_frontend:do_db_req
-1. verifies auth
-2. verifies bucket uuid
-3. executes handler
-
----------------------------------------
-
-save view:
-PUT http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc
-
-show results:
-http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc/_view/abc?stale=false&inclusive_end=true&connection_timeout=60000&limit=10&skip=0&_=1440723244864
-
-https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050/edit?usp=sharing
-
-
------------------------------------------
+----------------------------------------
 
 {cluster.admin.internal, all}
 {cluster.admin.diag, read}
@@ -1145,3 +988,659 @@ CERTS:
 REST API to assign CA signed certificate to the node
 REST API to display root CA cert in UI
 Changes in Add Node handshake 
+
+
+---------------------------------------------------
+
+menelaus_auth
+
+UserPassword = extract_auth(Req)
+
+check_admin_auth_int(Auth)
+bucket_auth_fun(Auth)
+check_ldap_int(Auth, [admin])
+
+check_ldap_int({token, _Token}, _) ->
+    false;
+check_ldap_int({User, Password}, AllowedRoles) ->
+    Role = saslauthd_auth:check(User, Password),
+    case lists:member(Role, AllowedRoles) of
+        true ->
+            {true, User, Role};
+        false ->
+            false
+    end;
+check_ldap_int(undefined, _) ->
+    false.
+
+
+build_settings() ->
+    case ns_config:search(saslauthd_auth_settings) of
+        {value, Settings} ->
+            Settings;
+        false ->
+            [{enabled, false},
+             {admins, []},
+             {roAdmins, []}]
+    end.
+
+
+store_user_info(Req, User, Role, Source, Token) ->
+    Headers = Req:get(headers),
+    H1 = mochiweb_headers:enter("menelaus-auth-user", User, Headers),
+    H2 = mochiweb_headers:enter("menelaus-auth-role", Role, H1),
+    H3 = mochiweb_headers:enter("menelaus-auth-token", Token, H2),
+    H4 = mochiweb_headers:enter("menelaus-auth-source", Source, H3),
+    mochiweb_request:new(Req:get(socket), Req:get(method), Req:get(raw_path), Req:get(version), H4).
+
+
+tokens - menelaus_ui_auth
+
+Identity:
+{Username, admin}
+{Username, ro_admin}
+anonymous
+{Username, saslauthd}
+
+
+any bucket
+{[pools], read}
+
+
+--------------------------------------
+auth_any_bucket = {[pools], read}
+
+/pools
+/pools/default
+/pools/nodes
+/poolsStreaming/default
+/pools/default/buckets
+/pools/default/nodeServices
+
+auth_bucket
+{{[{bucket, Id}, settings], read}
+{[{bucket, Id}, views], read}
+{[{bucket, Id}, stats], read}
+{{[{bucket, Id}, data], read}
+
+
+auth_bucket_mutate
+{{[{bucket, Id}], flush}
+
+-------------------------------------------
+
+-------------------
+auth_bucket_with_info
+auth_bucket
+-------------------
+
+
+handle_cbauth_post(Req) ->
+    Role = menelaus_auth:get_role(Req),
+    User = menelaus_auth:get_user(Req),
+    Source = menelaus_auth:get_source(Req),
+    menelaus_util:reply_json(Req, {[{role, erlang:list_to_binary(Role)},
+                                    {user, erlang:list_to_binary(User)},
+                                    {source, erlang:list_to_binary(Source)}]}).
+
+
+prepare(Req, Params) ->
+    {User, Token, Remote} =
+        case Req of
+            undefined ->
+                {undefined, undefined, undefined};
+            _ ->
+                {get_user_id(menelaus_auth:get_user(Req), menelaus_auth:get_source(Req)),
+                 menelaus_auth:get_token(Req),
+                 get_remote(Req)}
+        end,
+    Body = [{timestamp, now_to_iso8601(now())},
+            {remote, Remote},
+            {sessionid, Token},
+            {real_userid, User}] ++ Params,
+
+    prepare_list(Body).
+
+
+------------------------------------------------
+TODO
+------------------------------------------------
+1. logClientError - Client-side error-report for user undefined on node 'n_0@127.0.0.1':
+2. upgrade of saslauthd configuration
+
+
+
+menelaus_auth.erl:79: The pattern "admin" can never match the type 'none'
+menelaus_auth.erl:81: The pattern "ro_admin" can never match the type 'none'
+menelaus_auth.erl:122: The pattern {'true', NewReq} can never match the type 'false'
+menelaus_auth.erl:234: The pattern {'true', NewReq} can never match the type 'false'
+menelaus_auth.erl:254: The pattern RV = {'true', _NewReq} can never match the type 'false'
+menelaus_auth.erl:280: The pattern {'true', NewReq} can never match the type 'false'
+menelaus_auth.erl:302: The pattern {'true', _NewReq} can never match the type 'false'
+menelaus_auth.erl:324: The variable RV can never match since previous clauses completely covered the type 'false'
+menelaus_auth.erl:369: The variable RV can never match since previous clauses completely covered the type 'false'
+menelaus_cbauth.erl:213: Call to missing or unexported function menelaus_auth:get_user/1
+menelaus_cbauth.erl:214: Call to missing or unexported function menelaus_auth:get_source/1
+menelaus_cbauth.erl:215: The call erlang:list_to_binary(Role::'none') breaks the contract (IoList) -> binary() when is_subtype(IoList,iolist())
+ns_audit.erl:167: The pattern 'undefined' can never match the type {_,atom()}
+
+curl -X PUT --data "{name:\"Ivan Ivanov\",roles:[{role:\"admin\"},{role:\"bucket_admin\",bucket_name:\"defaut\"}]}" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+
+
+{name:\"Ivan Ivanov\",roles:[{role:\"admin\"},{role:\"bucket_admin\",bucket_name:\"defaut\"}]}
+
+
+[ns_server:debug,2015-12-24T02:37:26.665-08:00,n_0@127.0.0.1:<0.9171.0>:menelaus_web_rbac:handle_put_user:165]BLAH [{"{name:\"Ivan Ivanov\",roles:[{role:\"admin\"},{role:\"bucket_admin\",bucket_name:\"defaut\"}]}",
+       []}]
+
+
+name=Ivan Ivanov&roles=admin,bucket_admin:default
+
+curl -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin:default" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+
+curl -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+
+curl -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+
+curl -X POST --data "cluster.bucket:default.stats!read" http://Administrator:asdasd@127.0.0.1:9000/pools/default/testPermissions
+
+curl -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/roles
+
+	// IsAdmin method returns true iff this creds represent valid
+	// admin account.
+	IsAdmin() (bool, error)
+	// CanReadAnyMetadata method returns true iff this creds has
+	// permission to read any metadata (i.e. admin or ro-admin).
+	CanReadAnyMetadata() bool
+	// IsROAdmin is confusing alias for CanReadAnyMetadata. Don't
+	// use!
+	IsROAdmin() (bool, error)
+	// CanAccessBucket method returns true iff this creds
+	// represent valid account that can read/write/query docs in given
+	// bucket.
+	CanAccessBucket(bucket string) (bool, error)
+	// CanReadBucket method returns true iff this creds represent
+	// valid account that can read (but not necessarily write)
+	// docs in given bucket.
+	CanReadBucket(bucket string) (bool, error)
+	// CanDDLBucket method returns true iff this creds represent
+	// valid account that can DDL in given bucket. Note that at
+	// this time it delegates to CanAccessBucket in only
+	// implementation.
+	CanDDLBucket(bucket string) (bool, error)
+
+
+/pools/default isAdmin
+./godeps/src/github.com/couchbase/go-couchbase/pools.go:105:
+./godeps/src/github.com/couchbase/gocb/gocbcore/config.go:19:
+./goproj/src/github.com/couchbase/indexing/secondary/dcp/pools.go:52:
+
+CanReadAnyMetadata
+./goproj/src/github.com/couchbase/query/clustering/couchbase/clustering_cb.go:166:
+
+IsAdmin
+./goproj/src/github.com/couchbase/goxdcr/replication_manager/adminport.go:655
+./goproj/src/github.com/couchbase/query/clustering/couchbase/clustering_cb.go:157:
+
+IsROAdmin
+./goproj/src/github.com/couchbase/goxdcr/replication_manager/adminport.go:652:
+
+CanAccessBucket
+./goproj/src/github.com/couchbase/query/datastore/couchbase/couchbase.go:98:
+
+CanReadBucket
+./goproj/src/github.com/couchbase/query/datastore/couchbase/couchbase.go:104
+
+CanDDLBucket
+./goproj/src/github.com/couchbase/query/datastore/couchbase/couchbase.go:92:
+
+
+user -> permission -> true/false
+
+MB-11314 rest api to get list of available roles
+
+GET /settings/rbac/roles
+returns array of objects like this one:
+{"role":"admin",
+ "name":"Admin",
+ "desc":"Can manage ALL cluster features including security."}
+
+or with extra property "bucket_name":"default" if the role is
+parametrized
+
+MB-11314 rest api for editing users and assigning roles
+
+examples:
+curl -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin:default" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+
+curl -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+
+curl -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+
+
+GET /settings/rbac/users
+
+curl -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+[{"name":"Ivan Ivanov","id":"ivanivanov","roles":[{"role":"admin"},{"role":"bucket_admin","bucket_name":"default"}]},{"name":"Petr Petrov","id":"petrpetrov","roles":[{"role":"replication_admin"}]}]couchbasesMBP3:rbac artem$
+
+couchbasesMBP3:rbac artem$ curl -X PUT --data "name=Ivan Ivanov&roles=views_admin[*],bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+[{"name":"Ivan Ivanov","id":"ivanivanov","roles":[{"role":"admin"},{"role":"bucket_admin","bucket_name":"default"}]},{"name":"Petr Petrov","id":"petrpetrov","roles":[{"role":"replication_admin"}]}]
+
+
+
+couchbasesMBP3:rbac artem$ curl -X PUT --data "name=Ivan Ivanov&roles=cluster_admin,bucket_admin:default" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+[{"name":"Ivan Ivanov","id":"ivanivanov","roles":[{"role":"cluster_admin"},{"role":"bucket_admin","bucket_name":"default"}]},{"name":"Petr Petrov","id":"petrpetrov","roles":[{"role":"replication_admin"}]}
+
+$ curl -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+[{"name":"Petr Petrov","id":"petrpetrov","roles":[{"role":"replication_admin"}]}]
+
+
+$ curl -X POST --data 'cluster.bucket:default.stats!read,cluster.bucket:default!write' http://roadmin:asdasd@127.0.0.1:9000/pools/default/checkPermissions
+{"cluster.bucket:default.stats!read":true,"cluster.bucket:default!write":false}
+
+
+-------------------------------
+
+(n_0@127.0.0.1)1> ns_config:search(saslauthd_auth_settings)
+(n_0@127.0.0.1)1> .
+{value,[{enabled,true},
+        {admins,[<<"ldapadmin">>]},
+        {roAdmins,[<<"ldapreadonly">>]}]}
+
+{value,[{enabled,true},
+        {admins,asterisk},
+        {roAdmins,[<<"ldapreadonly">>]}]}
+
+{value,[{enabled,true},
+        {admins,[<<"ldapreadonly">>]},
+        {roAdmins,[<<"ldapreadonly">>]}]}
+
+false
+
+{_, Admins} = lists:keyfind(admins, 1, LDAPCfg),
+    {_, RoAdmins} = lists:keyfind(roAdmins, 1, LDAPCfg),
+
+check(User, Password) ->
+    LDAPCfg = build_settings(),
+    Enabled = ({enabled, true} =:= lists:keyfind(enabled, 1, LDAPCfg)),
+    case Enabled of
+        false ->
+            false;
+        true ->
+            case verify_creds(User, Password) of
+                true ->
+                    get_role_pre_watson(LDAPCfg, User);
+                Other ->
+                    Other
+            end
+    end.
+
+
+do_upgrade_config_from_4_0_to_watson(DefaultConfig) ->
+    Key = {node, node(), memcached_config},
+    {value, McdConfig} = ns_config:search([DefaultConfig], Key),
+    [{set, Key, McdConfig}].
+
+(n_0@127.0.0.1)5> ns_config:search(user_roles).             
+{value,[{{"petrpetrov",saslauthd},
+         [{roles,[replication_admin]},{name,"Petr Petrov"}]}]}
+
+
+http://127.0.0.1:9000/settings/indexes
+
+
+{cluster.bucket[<bucket_name>].xdcr, [read, execute]}
+{cluster.bucket[<bucket_name>], all}
+{cluster.bucket[all].data, none}
+{cluster.bucket[all].settings, read}
+{cluster.admin, none}
+{cluster, read}
+
+
+
+GET
+/pools/default/remoteClusters
+
+
+git checkout b1652b9a7ebd91c99c2b015ffa51c0346e9ab21a - WORKS
+
+
+127.0.0.1 - Administrator [19/Jan/2016:18:10:48 -0800] "POST /controller/createReplication HTTP/1.1" 404 31 - Python-httplib2/$Rev: 259 $
+
+
+[ns_server:debug,2016-01-19T18:50:14.151-08:00,n_0@127.0.0.1:<0.898.0>:menelaus_web:check_bucket_uuid:848]Attempt to access non existent bucket any
+
+
+Started:
+[ns_server:info,2016-01-18T15:51:08.271,nonode@nohost:<0.89.0>:ns_server:init_logging:251]Started & configured logging
+
+Src:
+Groups:
+curr_items                    16464052
+curr_items_tot                49398141
+
+Users:
+curr_items,                   102158088},
+curr_items_tot,               306502990},
+
+
+Dest:
+Users
+curr_items                    295912272
+curr_items_tot                295912272
+                  {curr_items,306530867},
+              {curr_items_tot,306530867},
+
+
+                   {curr_items,49392874},
+               {curr_items_tot,49392874},
+
+
+-------------------------
+
+goproj/src/github.com/couchbase/query/datastore/couchbase/couchbase.go
+goproj/src/github.com/couchbase/query/clustering/couchbase/clustering_cb.go
+goproj/src/github.com/couchbase/goxdcr/replication_manager/adminport.go
+goproj/src/github.com/couchbase/cbft/utils.go
+
+
+The following functions are deprecated and will be removed from cbauth at the end of watson:
+Creds.IsAdmin, Creds.CanReadAnyMetadata, Creds.IsROAdmin, Creds.CanAccessBucket, Creds.CanReadBucket, Creds.CanDDLBucket
+All these calls should be replaced with Creds.IsAllowed call to test appropriate permission for REST API
+
+Also the way authentication/authorization failure should be handled had changed.
+
+Please refer to please also refer to "changes in cbauth" section of the document for more info:
+https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050
+
+
+can be removed from pools only after classic UI will be gone
+
+RoAdmin:
+http://review.couchbase.org/#/c/27941/
+Admin:
+http://review.couchbase.org/#/c/3844/
+
+
+-----------------------------------------------------------------------------------------
+
+------------------------
+http://127.0.0.1:9500
+------------------------
+
+capi_frontend:verify_bucket_auth
+--------------------------------
+"Capi-Auth-Token" = cookie (set by capi_http_proxy after succesfull auth by menelaus if /couchBase is used)
+or
+menelaus_auth:is_bucket_accessible(BucketTuple, MochiReq);
+
+/
+%%{"couchdb":"Welcome","version":"2.1.1r-506-gb1a22b8","couchbase":"4.0.0r-826-g0301cac-enterprise"}
+%% no auth, method is irrelevant
+
+/_pre_replicate
+/_mass_vbopaque_check
+/_commit_for_checkpoint
+%% sent to target xdcr node during xdcr replication
+%% we use POST method, but method is not enforced, though it has to have body
+%% auth: capi_frontend:verify_bucket_auth(Req, Bucket)
+
+
+/_spatial_merge
+/_view_merge
+%% methods: POST, GET, HEAD
+%% only user "@ns_server"/otp_cookie is allowed
+%% anonymous access in pre 4.0 clusters
+%% MB-8872 add security to endpoints
+%% called only by capi_indexer.erl
+
+/_active_tasks
+%% methods: GET, HEAD
+%% couch_httpd:verify_is_server_admin(Req)
+%% currently unsecured
+
+%% currently unsecured _set_view apis: (couch_set_view_http)
+POST /_set_view/<name>/_cleanup -> couch_set_view:cleanup_index_files(mapreduce_view, Name),
+POST /_set_view/<name>/_design/<ddoc_id>/_define %% define view group (couch_set_view:define_group)
+GET /_set_view/<name>/_design/<ddoc_id>/_info %% get view group info (couch_set_view:get_group_info)
+GET /_set_view/<name>/_design/<ddoc_id>/_btree_stats
+POST /_set_view/<name>/_design/<ddoc_id>/_reset_utilization_stats
+GET /_set_view/<name>/_design/<ddoc_id>/_get_utilization_stats
+GET /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
+POST /_set_view/<name>/_design/<ddoc_id>/_view/<view_name>
+POST /_set_view/<name>/_design/<ddoc_id>/_compact/main
+POST /_set_view/<name>/_design/<ddoc_id>/_compact/replica
+POST /_set_view/<name>/_design/<ddoc_id>/_set_partition_states
+POST /_set_view/<name>/_design/<ddoc_id>/_add_replica_partitions
+POST /_set_view/<name>/_design/<ddoc_id>/_remove_replica_partitions
+
+/_spatial_view
+%% similar to _set_view and all unsecured
+
+GET /_spatial_view/<name>/_design/<ddoc_id>/_info
+GET /_spatial_view
+POST /_spatial_view
+
+-----------------------------------------
+default handler: couch_httpd_db, handle_request
+-----------------------------------------
+
+GET /<bucket>%2F<vbucket>
+{"db_name":"buck/1","instance_start_time":"1441680033"} //used by 2.x xdcr checkpointing
+
+POST /<bucket>
+DbFrontend:update_doc
+
+/<db_name>
+capi_frontend:do_db_req(Req, fun db_req/2);
+
+/<db_name>/<db_handler>/....
+capi_frontend:do_db_req(Req, Handler);
+
+do_db_req:
+verify_bucket_auth(Req, BucketName) - either "Capi-Auth-Token" or menelaus_auth:is_bucket_accessible
+verify_bucket_uuid(BucketConfig, UUID)
+
+
+path_parts = [<<"buck">>,<<"_design">>,<<"dev_doccc">>]
+dbname = <<"buck">>
+GET /buck/_design/dev_doccc?_=1441680058670 404
+
+
+
+
+Notes:
+- need to do identity propagation from capi_http_proxy to capi_frontend:verify_bucket_auth
+
+
+
+(couchdb_n_0@127.0.0.1)1> couch_config:get("httpd_global_handlers").
+[{"_set_view","{couch_set_view_http, handle_req}"},
+ {"_active_tasks",
+  "{couch_httpd_misc_handlers, handle_task_status_req}"},
+ {"_mass_vbopaque_check",
+  "{capi_replication, handle_mass_vbopaque_check}"},
+ {"_commit_for_checkpoint",
+  "{capi_replication, handle_commit_for_checkpoint}"},
+ {"/",
+  "{couch_httpd_misc_handlers, handle_welcome_req, <<\"Welcome\">>}"},
+ {"_pre_replicate",
+  "{capi_replication, handle_pre_replicate}"},
+ {"_view_merge","{capi_view, handle_view_merge_req}"},
+ {"_spatial_merge","{capi_spatial, handle_view_merge_req}"},
+ {"_spatial_view","{spatial_http, handle_req}"}]
+
+
+(couchdb_n_0@127.0.0.1)3> couch_config:get("httpd_design_handlers").
+[{"_spatial","{capi_spatial, handle_view_req}"},
+ {"_info","{couch_httpd_db,   handle_design_info_req}"},
+ {"_view","{capi_view, handle_view_req}"}]
+(couchdb_n_0@127.0.0.1)4>
+
+(couchdb_n_0@127.0.0.1)8> couch_config:get("httpd_db_handlers").
+[{"_design","{couch_httpd_db, handle_design_req}"},
+ {"_compact","{couch_httpd_db, handle_compact_req}"},
+ {"_changes","{couch_httpd_db, handle_changes_req}"},
+ {"_all_docs","{capi_view, all_docs_db_req}"},
+ {"_view_cleanup",
+  "{couch_httpd_db, handle_view_cleanup_req}"}]
+
+DbFrontend:
+(couchdb_n_0@127.0.0.1)5> list_to_atom(couch_config:get("httpd", "db_frontend", "couch_db_frontend")).
+capi_frontend
+
+DefaultFun:
+couch_config:get("httpd", "default_handler", "{couch_httpd_db, handle_request}").
+"{couch_httpd_db, handle_request}"
+
+couch_httpd:handle_request
+1. calls one of the httpd_global_handlers
+2. or falls back to couch_httpd_db:handle_request
+
+couch_httpd_db:handle_request
+1. for one part url calls capi_frontend:do_db_req with db_req/2
+2. matches second part and uses handler from httpd_db_handlers for capi_frontend:do_db_req
+
+couch_httpd_db:db_req
+GET: returns capi_frontend:get_db_info(Db) - (used by 2.x xdcr checkpointing)
+POST: capi_frontend:update_doc(Db, Doc, []) - capi_ddoc_manager:update_doc(Name, Doc)
+
+capi_frontend:do_db_req
+1. verifies auth
+2. verifies bucket uuid
+3. executes handler
+
+---------------------------------------
+
+save view:
+PUT http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc
+
+show results:
+http://127.0.0.1:9000/couchBase/travel-sample/_design/dev_abc/_view/abc?stale=false&inclusive_end=true&connection_timeout=60000&limit=10&skip=0&_=1440723244864
+
+https://docs.google.com/document/d/1oorpsTFMvF2kk_XuC8cJoxS5xQtk-bInV_OkoED8050/edit?usp=sharing
+
+[ns_server:debug,2016-02-24T16:35:18.530-08:00,couchdb_n_0@127.0.0.1:<0.178.0>:capi_frontend:continue_do_db_req:64]BLAH PP {'GET',<<"default">>,
+            [<<"default">>,<<"_design">>,<<"dev_aaa">>],
+            {httpd,
+                {mochiweb_request,
+                    [#Port<0.11350>,'GET',"/default/_design/dev_aaa",
+                     {1,1},
+                     {4,
+                      {"authorization",
+                       {'Authorization',"Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q="},
+                       {"accept",{'Accept',"*/*"},nil,nil},
+                       {"user-agent",
+                        {'User-Agent',"curl/7.37.1"},
+                        {"host",{'Host',"127.0.0.1:9500"},nil,nil},
+                        nil}}}]},
+                "127.0.0.1",'GET',
+                [<<"default">>,<<"_design">>,<<"dev_aaa">>],
+                capi_frontend,
+                {dict,5,16,16,8,80,48,
+                    {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+                    {{[[<<"_design">>|#Fun<couch_httpd.7.7061708>]],
+                      [[<<"_all_docs">>|#Fun<couch_httpd.7.7061708>]],
+                      [[<<"_view_cleanup">>|#Fun<couch_httpd.7.7061708>]],
+                      [],[],[],[],[],
+                      [[<<"_compact">>|#Fun<couch_httpd.7.7061708>]],
+                      [],[],[],
+                      [[<<"_changes">>|#Fun<couch_httpd.7.7061708>]],
+                      [],[],[]}}},
+                {user_ctx,null,[<<"_admin">>],undefined},
+                undefined,
+                {dict,3,16,16,8,80,48,
+                    {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+                    {{[],
+                      [[<<"_spatial">>|#Fun<couch_httpd.9.7061708>]],
+                      [[<<"_info">>|#Fun<couch_httpd.9.7061708>]],
+                      [],[],[],[],[],[],[],[],[],[],
+                      [[<<"_view">>|#Fun<couch_httpd.9.7061708>]],
+                      [],[]}}},
+                undefined,#Fun<couch_httpd.5.7061708>,
+                {dict,9,16,16,8,80,48,
+                    {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+                    {{[[<<"_spatial_view">>|#Fun<couch_httpd.5.7061708>]],
+                      [[<<"_active_tasks">>|#Fun<couch_httpd.5.7061708>]],
+                      [],[],
+                      [[<<"/">>|#Fun<couch_httpd.4.7061708>],
+                       [<<"_pre_replicate">>|#Fun<couch_httpd.5.7061708>]],
+                      [],
+                      [[<<"_set_view">>|#Fun<couch_httpd.5.7061708>]],
+                      [],
+                      [[<<"_spatial_merge">>|#Fun<couch_httpd.5.7061708>]],
+                      [],[],[],
+                      [[<<"_view_merge">>|#Fun<couch_httpd.5.7061708>]],
+                      [[<<"_commit_for_checkpoint">>|
+                        #Fun<couch_httpd.5.7061708>]],
+                      [[<<"_mass_vbopaque_check">>|
+                        #Fun<couch_httpd.5.7061708>]],
+                      []}}}}}
+
+
+
+[couchdb:error,2016-02-24T16:42:03.484-08:00,couchdb_n_0@127.0.0.1:<0.193.0>:couch_log:error:44]Uncaught error in HTTP request: {throw,not_found}
+
+Stacktrace: [{capi_frontend,get_db_info,1,
+                            [{file,"src/capi_frontend.erl"},{line,172}]},
+             {couch_httpd_db,db_req,2,
+                             [{file,"/Users/artem/Work/watson/couchdb/src/couchdb/couch_httpd_db.erl"},
+                              {line,174}]},
+             {request_throttler,do_request,3,
+                                [{file,"src/request_throttler.erl"},
+                                 {line,59}]},
+             {couch_httpd,handle_request,6,
+                          [{file,"/Users/artem/Work/watson/couchdb/src/couchdb/couch_httpd.erl"},
+                           {line,222}]},
+             {mochiweb_http,headers,5,
+                            [{file,"/Users/artem/Work/watson/couchdb/src/mochiweb/mochiweb_http.erl"},
+                             {line,94}]},
+             {proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]
+
+
+---------------------------------
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9500/default%2F0
+{"db_name":"default/0","instance_start_time":"1456360511"}
+
+extract_base_ck_params(Req)
+extract_ck_params(Req)
+handle_pre_replicate(Req), handle_commit_for_checkpoint
+
+extract_base_ck_params(Req)
+handle_mass_vbopaque_check(Req)
+
+
+5466 2883 9318 8542
+04/16
+482
+
+
+{ssl_minimum_protocol, {ns_ssl_services_setup, ssl_minimum_protocol, []}},
+
+-----------------------------------------------------------
+./run --queries 10000 --workers 1 --query-url 'http://test:asdasd@localhost:9500/test/_design/dev_bbb/_view/bbb?limit=10&stale=update_after' --output-times before
+
+All workers finished. Final statistics are:
+
+    Average response time:   1.3835187999999936ms
+    Highest response time:   92.064ms
+    Lowest response time:    1.151ms
+    Response time std dev:   0.9150079872036967ms
+    # of errors:             0
+
+All workers finished. Final statistics are:
+
+    Average response time:   1.3415971000000055ms
+    Highest response time:   87.202ms
+    Lowest response time:    1.156ms
+    Response time std dev:   0.8664100465550881ms
+    # of errors:             0
+
+
+
+    Average response time:   1.3282315000000036ms
+    Highest response time:   98.453ms
+    Lowest response time:    1.126ms
+    Response time std dev:   0.9777920586237906ms
+    # of errors:             0

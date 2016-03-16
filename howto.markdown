@@ -29,3 +29,19 @@ http://review.couchbase.org
 ### Bugs
 
 https://issues.couchbase.com
+
+### count active items in cluster:
+grep vb_active_curr_items cluster/*/stats.log | awk '{sum+=$3}; END {print sum}'
+
+### count occurences of specific phrase in logs:
+grep "failed: connect_timeout" source/*/ns_server.xdcr.log | grep --only-matching ',ns_1.*viber.prod:<' | sort | uniq -c
+
+### diag.log
+master_events('ns_1@stnacb10.amunet.edu') =
+per_node_processes('ns_1@stnacb10.amunet.edu') =
+per_node_babysitter_processes('ns_1@stnacb10.amunet.edu') =
+per_node_diag('ns_1@stnacb10.amunet.edu') =
+
+### extract config from diag.log
+Starts from per_node_diag('ns_1@stnacb1.amunet.edu') =
+Ends with master_events( for next node

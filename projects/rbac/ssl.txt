@@ -359,19 +359,6 @@ cp /Users/artem/Work/cert/newcerts/local.key ~/Work/watson/ns_server/data/n_0/in
 curl -X POST http://Administrator:asdasd@127.0.0.1:9000/node/controller/reloadCertificate
 
 
-
-TypeError: Cannot read property 'isAuthenticated' of undefined
-    at http://127.0.0.1:9000/ui/app/app.js:48:18
-    at processQueue (http://127.0.0.1:9000/ui/libs/angular.js:14634:28)
-    at http://127.0.0.1:9000/ui/libs/angular.js:14650:27
-    at Scope.$eval (http://127.0.0.1:9000/ui/libs/angular.js:15916:28)
-    at Scope.$digest (http://127.0.0.1:9000/ui/libs/angular.js:15727:31)
-    at Scope.$apply (http://127.0.0.1:9000/ui/libs/angular.js:16024:24)
-    at done (http://127.0.0.1:9000/ui/libs/angular.js:10511:47)
-    at completeRequest (http://127.0.0.1:9000/ui/libs/angular.js:10683:7)
-    at XMLHttpRequest.requestLoaded (http://127.0.0.1:9000/ui/libs/angular.js:10624:9)
-
-
 --------------------------------------------------------------------------------
 
 REST API's for managing certificates:
@@ -418,3 +405,41 @@ Returns:
 200 - if success
 400 with errpor message if failed. 
 
+
+
+pkix_sign_types(?sha1WithRSAEncryption) ->
+    {sha, rsa};
+pkix_sign_types(?'sha-1WithRSAEncryption') ->
+    {sha, rsa};
+pkix_sign_types(?sha224WithRSAEncryption) ->
+    {sha224, rsa};
+pkix_sign_types(?sha256WithRSAEncryption) ->
+    {sha256, rsa};
+pkix_sign_types(?sha384WithRSAEncryption) ->
+    {sha384, rsa};
+pkix_sign_types(?sha512WithRSAEncryption) ->
+    {sha512, rsa};
+pkix_sign_types(?md5WithRSAEncryption) ->
+    {md5, rsa};
+pkix_sign_types(?'id-dsa-with-sha1') ->
+    {sha, dsa};
+pkix_sign_types(?'id-dsaWithSHA1') ->
+    {sha, dsa};
+pkix_sign_types(?'ecdsa-with-SHA1') ->
+    {sha, ecdsa};
+pkix_sign_types(?'ecdsa-with-SHA256') ->
+    {sha256, ecdsa};
+pkix_sign_types(?'ecdsa-with-SHA384') ->
+    {sha384, ecdsa};
+pkix_sign_types(?'ecdsa-with-SHA512') ->
+    {sha512, ecdsa}.
+
+
+pkix_sign_types(AlgorithmId) -> {DigestType, SignatureType}
+
+Types:
+
+AlgorithmId = oid()
+Signature OID from a certificate or a certificate revocation list.
+DigestType = rsa_digest_type() | dss_digest_type()
+SignatureType = rsa | dsa | ecdsa

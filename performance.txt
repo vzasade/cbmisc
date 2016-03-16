@@ -1,0 +1,18 @@
+How To:
+-------
+http://www.3scale.net/2015/04/how-to-load-test-and-tune-performance-on-your-api-part-i/
+
+Apache JMeter
+-------------
+http://jmeter.apache.org/download_jmeter.cgi
+
+Fillipe's tool:
+--------------
+
+https://github.com/couchbaselabs/view_query_perf
+
+Example of usage: http://review.couchbase.org/#/c/16460/
+
+Measuring views perf:
+---------------------
+./run --queries 10000 --workers 1 --query-url 'http://test:asdasd@localhost:9500/test/_design/dev_bbb/_view/bbb?limit=10&stale=update_after' --output-times after

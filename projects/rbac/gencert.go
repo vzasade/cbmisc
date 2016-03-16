@@ -17,8 +17,6 @@ import (
 	"net"
 )
 
-var keyLength = 2048
-
 func mustNoErr(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -63,6 +61,9 @@ func derToPKey(octets []byte) (pkey *rsa.PrivateKey) {
 }
 
 func createCertificate(commonName string, final bool, parent *x509.Certificate, parentPKey *rsa.PrivateKey) ([]byte, *rsa.PrivateKey) {
+	var keyLength = 2048
+	var sAlg = SHA256WithRSA
+
 	pkey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	mustNoErr(err)
 
@@ -72,7 +73,7 @@ func createCertificate(commonName string, final bool, parent *x509.Certificate, 
 		NotBefore:    earlyNotBefore,
 		NotAfter:     earlyNotAfter,
 		Subject:      pkix.Name{
-			CommonName: commonName,
+		CommonName:   commonName,
 		},
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
@@ -91,6 +92,9 @@ func createCertificate(commonName string, final bool, parent *x509.Certificate, 
 
 	if parent != nil {
 		template.SignatureAlgorithm = parent.SignatureAlgorithm
+	}
+	else {
+		template.SignatureAlgorithm = sAlg
 	}
 
 	signer := &template
