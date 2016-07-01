@@ -443,3 +443,133 @@ AlgorithmId = oid()
 Signature OID from a certificate or a certificate revocation list.
 DigestType = rsa_digest_type() | dss_digest_type()
 SignatureType = rsa | dsa | ecdsa
+
+https://gist.github.com/anonymous/5e514ad3604c29dd9357
+
+
+--------------------------------------------------------------------
+
+
+curl -X POST --data-binary "@/Users/artem/Work/bugs/certs/root/ca.pem" http://Administrator:asdasd@127.0.0.1:9000/controller/uploadClusterCA
+mkdir ~/Work/watson/ns_server/data/n_0/inbox
+cp node/chain.pem ~/Work/watson/ns_server/data/n_0/inbox/chain.pem
+cp node/pkey.key ~/Work/watson/ns_server/data/n_0/inbox/pkey.pem
+curl -X POST http://Administrator:asdasd@127.0.0.1:9000/node/controller/reloadCertificate
+
+
+---------------------------------------------
+
+mkdir root
+cd root
+;; openssl genrsa -out ca.key 2048
+openssl genrsa -aes256 -out ca.key 4096
+openssl req -new -x509  -days 3650 -sha256 -key ca.key -out ca.pem -subj '/C=UA/O=My Company/CN=My Company Root CA'openssl req -new -x509  -days 3650 -sha256 -key ca.key -out ca_e.pem -subj '/C=UA/O=My Company/CN=My Company Root CA'
+
+
+
+
+-----BEGIN CERTIFICATE-----
+MIIFozCCA4ugAwIBAgIJALno1wiypvITMA0GCSqGSIb3DQEBCwUAMD8xCzAJBgNV
+BAYTAlVBMRMwEQYDVQQKEwpNeSBDb21wYW55MRswGQYDVQQDExJNeSBDb21wYW55
+IFJvb3QgQ0EwHhcNMTYwNDE5MDYyODUxWhcNMjYwNDE3MDYyODUxWjA/MQswCQYD
+VQQGEwJVQTETMBEGA1UEChMKTXkgQ29tcGFueTEbMBkGA1UEAxMSTXkgQ29tcGFu
+eSBSb290IENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEApnBJ96wl
+vev6tR4AGdUTbCaB0rnvdP+WGeTpxD/hBVe93KwowpPV9PcwtTkmXh37g2ipOSPo
+HogO5rZd9Tiz+mFl4d+Ilxkq35tCOSIIZ5SUx7SBj4T/H3PVQJPKs6pZmlcYj3u+
+3ScpUPVly/EOXJ4NTR1DC0AIL5DXm0eMqHvA9FmiEaD7Vns3hErLKTL48pN1AuSo
+6Z2SPw9tnX3c7Ro9xSYPzVoIfaD6aPPM7gR0a54E+wt+XulDMQWSCb8pzz9vHhvt
+E5r4WFlfqPHULX/x4yaSSS8z04QaRd9N9/cPlMPy/o+MtxPBHFw8JkE1YwjUDO3G
+s4q2ftX0/i9DGTmkb1oIV93mi+awR9IVY4sY+kcPRb25P2KVWrpUCYB6LroAW0Rn
+gYChojat09w75utQlFkIszeUP9dmoX5lXjoI6sU6J2hK+kIEQ6Q9QIF4TAZEgdqC
+BwlOSMVrOVxAQs7tHrrl4wCbnF32SmTmebvZOMo1Nf8nidi6h462FgxeoCWaXrk2
+2XdXH9TRnSglbwBn0sjUOIGWAdiJDSEA58xJITuBOgHHJzF0nafVpc/YspH0HlIg
+iSXYZKP0fJIGn44BWFblx627mJXidLnRNwcIMPvJCLFSKK3WrmrrDyI1jb97Cuhx
+ARzrdlF9pzCZG4ZjiUatjkD3dnYmNqJcymECAwEAAaOBoTCBnjAdBgNVHQ4EFgQU
+gkRKj6lBjG74nXQ78xyv8EvLqNUwbwYDVR0jBGgwZoAUgkRKj6lBjG74nXQ78xyv
+8EvLqNWhQ6RBMD8xCzAJBgNVBAYTAlVBMRMwEQYDVQQKEwpNeSBDb21wYW55MRsw
+GQYDVQQDExJNeSBDb21wYW55IFJvb3QgQ0GCCQC56NcIsqbyEzAMBgNVHRMEBTAD
+AQH/MA0GCSqGSIb3DQEBCwUAA4ICAQAKzM0TFsM2oGW9svNpOvfuPjgGCz4x0jLo
+bK/cl2Nv68xshLkY0m7qEDxFl4m0OZDTuBzGY9yPS22nAuQwGP9hHXAE1oyKF9Zw
+laOjh89KTpwd1FVLTNk3HKSgY55iOkmOSyFapMpOrmcOcOIsmPnzxz/0jwSPKAwG
+/1CxLbY1NRIpFXSCBrMjNA3DRYB6a0qwsHfOz2q5q/H8Tbj4RmL8+1iy+B0lRnVs
+QbV64a/g+UHh+t3ghr8FDg+hl7+BKTQCeBLbJ6canxW7kH3X4Kz/O7BqmgFjeO8w
+i6iE59wt9aTdgkzlhN8JUjKdTMQfewGIOoqjBgTY+Uk/5+mJtaYxjv9w+QypIIIi
+i1cctnEliAhhDqYW/8UKpPxl3ZbjyOHBIeg+LYHac/Ej64mjP+66l8n7tH2GVrLW
+QCA0TSKYerj9itxW5jLjmkab7hZhR1xwLEK1hvxyOOJ+O+CTVZ5nTtM8mmM57Mcw
+KdBHijkHVwgeIfYBAFX+BestHlXo57Pkt5pU4e10ott2dL8MadQ2aHLN9PGY9cDP
+VxGbXnj3abH93UZ3W6rx9VfEYik+smGFMf5E/ORJikjs3AUUQIUNH3QKydnO5pAM
+5xNwHQhpKvwSyuby7bsnRoGwdvdPSzppeOPVPLxXsiJAe5UK+UCNfGlc4pzYjtBU
+UrYcv2QIQA==
+-----END CERTIFICATE-----
+
+
+---------------------------------------------
+
+couchbasesMBP3:city artem$ openssl x509 -in ca.pem -text -noout
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number:
+            62:e8:b8:c0:d6:72:d6:ad:4d:a6:b6:f2:3d:52:4c:92
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: DC=net, DC=Citi, CN=Citi Internal Root CA Untrusted
+        Validity
+            Not Before: Mar 20 23:16:31 2014 GMT
+            Not After : Mar 20 23:26:25 2029 GMT
+        Subject: DC=net, DC=Citi, CN=Citi Internal Root CA Untrusted
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+            RSA Public Key: (2048 bit)
+                Modulus (2048 bit):
+                    00:b0:ff:fc:96:0f:94:1a:6b:e5:9f:e6:36:dd:3d:
+                    5d:b6:96:ef:01:f0:43:05:4f:6d:24:81:0c:99:01:
+                    40:d0:cb:f2:15:05:05:79:9d:54:b6:1d:a7:ba:fe:
+                    1d:41:71:14:83:64:3d:0c:78:b1:99:e8:b2:aa:ad:
+                    4f:a5:f9:23:c4:85:44:4c:6a:be:de:fa:ec:22:35:
+                    6e:39:d9:42:d7:e2:a0:78:37:7b:b0:2f:a7:d8:ca:
+                    f7:3b:8d:be:88:a5:95:32:c9:07:46:20:af:05:77:
+                    b6:5b:2d:fb:2b:a6:b0:71:af:1c:07:fe:31:79:12:
+                    e5:ce:aa:4a:2d:3b:8d:2d:a9:0f:89:89:ae:8c:9a:
+                    4c:23:ca:10:7c:95:39:18:61:67:b6:2d:eb:57:c3:
+                    9c:23:3b:a8:19:5b:90:ea:35:db:bb:df:08:da:4c:
+                    94:ac:87:80:03:6e:d6:b5:72:62:37:3c:65:71:fe:
+                    1a:5a:72:ea:74:00:0e:74:fa:14:4e:63:81:d8:c8:
+                    78:b7:42:8e:8f:ca:f6:9e:fe:02:a7:84:34:34:ad:
+                    fc:e4:bc:1e:27:10:01:88:38:4c:a9:c2:03:03:c8:
+                    69:5b:62:0b:7b:61:b9:7b:3a:54:76:71:05:d4:d6:
+                    33:b3:3a:1b:e6:c8:e5:6d:34:2b:14:20:c3:01:1a:
+                    96:3d
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            1.3.6.1.4.1.311.20.2: 
+                ...C.A
+            X509v3 Basic Constraints: critical
+                CA:TRUE
+            X509v3 Subject Key Identifier: 
+                52:84:FD:42:43:CE:84:F3:75:DD:40:F2:D0:7B:B1:9A:83:A6:6B:22
+            1.3.6.1.4.1.311.21.1: 
+                ...
+    Signature Algorithm: sha1WithRSAEncryption
+        65:fd:d1:44:8c:6b:3c:2b:bc:ff:12:0c:e2:e2:a5:20:c2:a8:
+        17:d6:2a:c0:68:2f:b0:a0:e9:98:f0:cd:f9:f7:9e:3d:ea:15:
+        6d:36:65:02:6f:61:2d:2e:32:d6:60:2c:30:ec:36:eb:e5:98:
+        f1:e0:39:a3:47:26:08:3b:70:b9:c0:a7:2f:56:04:13:e6:61:
+        fe:18:f9:80:41:11:c7:08:06:b7:f6:36:2d:04:66:93:f1:2b:
+        dc:5c:16:6f:85:bc:c3:33:93:7b:00:7f:07:ac:4e:1a:77:a9:
+        3e:27:e4:94:6f:dc:e7:5e:ca:11:d4:82:46:bf:bf:0d:18:e3:
+        17:af:6d:60:59:8f:e2:ce:55:82:c8:88:ed:8a:bd:f2:d9:2e:
+        3f:4c:49:8e:73:ea:8c:bc:6b:2e:05:40:44:e1:c8:81:58:54:
+        02:48:4d:1a:71:46:d3:1f:03:21:3a:bf:f8:16:5c:57:ee:4a:
+        77:41:a8:d2:da:9b:19:ea:f8:97:f2:92:07:2a:10:4e:a1:81:
+        0c:f9:5c:c1:a5:0c:1a:a8:7b:79:f5:db:fa:ce:3f:6a:9c:23:
+        20:16:cf:e0:3f:4e:72:6d:01:c4:5f:5a:f1:e6:26:2a:9f:36:
+        5f:a6:f7:04:0d:e8:47:d6:3a:7e:f4:08:97:0d:51:cb:a8:a0:
+        5a:6c:0b:09
+
+
+openssl verify -verbose -CAfile <(cat int2.pem int1.pem ca.pem) public_cert.pem
+cp correct_chain.pem ~/Work/watson/ns_server/data/n_0/inbox/chain.pem
+cp pkey.key ~/Work/watson/ns_server/data/n_0/inbox/pkey.key
+curl -X POST http://Administrator:asdasd@127.0.0.1:9000/node/controller/reloadCertificate
