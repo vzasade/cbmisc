@@ -1,0 +1,96 @@
+Tronds document
+---------------
+http://review.couchbase.org/#/c/65148/7/include/memcached/privileges.h
+
+Definitions:
+------------
+User identity is an object that uniquely identifies the user in RBAC universe.
+The roles are assigned to the identity, and the permissions are calulated
+for the identity.
+
+Authentication service is a service that takes username/password as an input
+and returns user identity.
+
+Authorization service is a service that takes identity as an input
+and allows to find out if a certain permission is allowed to this user.
+
+Proposal to host authorization service on ns_server
+---------------------------------------------------
+
+1. Existing authorization service is re-used for Data RBAC purposes
+2. memcached connects to the authorization service via REST API
+3. Every time when memcached wants to know if the user has certain permission(s)
+   it should call the authorozation REST api, provide user identity and
+   permission(s) as an input
+4. memcached should maintan a global cache that maps known user identities
+   to yes/no answers for permissions that were received from ns_server
+5. in the event of configuration change the ns_server will send
+   RESET_AUTHORIZATION_CACHE command to memcached, that will instruct
+   memcached to clean up the cache
+
+Questions about availability and performance
+--------------------------------------------
+
+1. Is it fast engough, and does it scale?
+
+we expect just a few (or even one) user to be configured to work with memcached,
+so most of the time memcached will do lookups against it's global cache
+
+2. what to do if it refuse to answer on the port
+
+refuse the connection. it shouldn't happen too often (cache miss only)
+though we can decide to retry couple of times in this case
+
+3. what to do if we're having "network" failures
+
+same as above
+
+4. what to do if we're failing to create a socket to perform
+   the rest call (running out of file descriptors)
+
+same as above. I guess the whole situation with running out of descriptors
+is quite catastrophic
+
+Can we avoid building http client into memcached?
+-------------------------------------------------
+
+Yes we can. Here's one of the ideas:
+
+We can use existing messaging protocol:
+
+1. ns_server opens another connection to memcached 
+2. ns_server send command AUTHORIZATION_REVRPC
+3. command blocks until memcached will need to test a permission
+4. command returns user identity and permission
+5. ns_server calls AUTHORIZATION_REVRPC providing yes/no answer
+6. command blocks and so on....
+
+Alternative proposal
+--------------------
+
+Since we know all the configured user identities and the number of permissions
+memcached is interested in is not that big (8 * NBuckets), ns_server can build
+the complete permission cache, write it to the file and ask memcached to pick
+up this file
+
+The file format will be like this
+{
+  "user1": {
+    "bucket1": ["Read", "Write", "SimpleStats"],
+    "bucket2": ["Read", "SimpleStats"]
+  }
+  "user2":  {
+    "bucket1": ["Read", "SimpleStats"],
+    "bucket2": ["Read", "Write", "SimpleStats"]
+  }
+}
+
+This way memcached will not need to ask ns_server at all, and it will be quite
+easy to do the standalone memcached testing.
+
+This solution can become more complex with the introduction of collections, but
+thiugh we should expect a lot of collections to be created, we hardly can expect
+the RBAC roles to be separately configured for all of them. So we can hope that
+this cache will not grow too big.
+      
+       
