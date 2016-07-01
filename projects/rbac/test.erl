@@ -148,7 +148,7 @@ main_oo([]) ->
     print_chain_from_file("MEMCACHED CHAIN", "/Users/artem/Work/watson/ns_server/data/n_0/config/memcached-cert.pem"),
     print_chain_from_file("GENERATED LOCAL", "/Users/artem/Work/watson/ns_server/data/n_0/config/local-ssl-cert.pem").
 
-main([]) ->
+main_rr([]) ->
     CAPath  = "/Users/artem/Work/cert/apple.pem",
     {ok, RawCA} = file:read_file(CAPath),
 
@@ -181,3 +181,149 @@ main([]) ->
 
     io:fwrite("PKAlgorithm: ~p~n",
               [PKAlgorithm#'PublicKeyAlgorithm'.algorithm]).
+
+split_bin(Bin) ->
+    split_bin(0, Bin).
+
+split_bin(N, Bin) ->
+    case Bin of
+	<<Line:N/binary, "\r\n", Rest/binary>> ->
+	    [Line | split_bin(0, Rest)];
+	<<Line:N/binary, "\n", Rest/binary>> ->
+	    [Line | split_bin(0, Rest)];
+	<<Line:N/binary>> ->
+	    [Line];
+	_ ->
+	    split_bin(N+1, Bin)
+    end.
+
+
+pem_start('Certificate') ->
+    <<"-----BEGIN CERTIFICATE-----">>;
+pem_start('RSAPrivateKey') ->
+    <<"-----BEGIN RSA PRIVATE KEY-----">>;
+pem_start('RSAPublicKey') ->
+    <<"-----BEGIN RSA PUBLIC KEY-----">>;
+pem_start('SubjectPublicKeyInfo') ->
+    <<"-----BEGIN PUBLIC KEY-----">>;
+pem_start('DSAPrivateKey') ->
+    <<"-----BEGIN DSA PRIVATE KEY-----">>;
+pem_start('DHParameter') ->
+    <<"-----BEGIN DH PARAMETERS-----">>;
+pem_start('CertificationRequest') ->
+    <<"-----BEGIN CERTIFICATE REQUEST-----">>;
+pem_start('ContentInfo') ->
+    <<"-----BEGIN PKCS7-----">>;
+pem_start('CertificateList') ->
+     <<"-----BEGIN X509 CRL-----">>;
+pem_start('OTPEcpkParameters') ->
+    <<"-----BEGIN EC PARAMETERS-----">>;
+pem_start('ECPrivateKey') ->
+    <<"-----BEGIN EC PRIVATE KEY-----">>.
+
+pem_end(<<"-----BEGIN CERTIFICATE-----">>) ->
+    <<"-----END CERTIFICATE-----">>;
+pem_end(<<"-----BEGIN RSA PRIVATE KEY-----">>) ->
+    <<"-----END RSA PRIVATE KEY-----">>;
+pem_end(<<"-----BEGIN RSA PUBLIC KEY-----">>) ->
+    <<"-----END RSA PUBLIC KEY-----">>;
+pem_end(<<"-----BEGIN PUBLIC KEY-----">>) ->
+    <<"-----END PUBLIC KEY-----">>;
+pem_end(<<"-----BEGIN DSA PRIVATE KEY-----">>) ->
+    <<"-----END DSA PRIVATE KEY-----">>;
+pem_end(<<"-----BEGIN DH PARAMETERS-----">>) ->
+    <<"-----END DH PARAMETERS-----">>;
+pem_end(<<"-----BEGIN PRIVATE KEY-----">>) ->
+    <<"-----END PRIVATE KEY-----">>;
+pem_end(<<"-----BEGIN ENCRYPTED PRIVATE KEY-----">>) ->
+    <<"-----END ENCRYPTED PRIVATE KEY-----">>;
+pem_end(<<"-----BEGIN CERTIFICATE REQUEST-----">>) ->
+    <<"-----END CERTIFICATE REQUEST-----">>;
+pem_end(<<"-----BEGIN PKCS7-----">>) ->
+    <<"-----END PKCS7-----">>;
+pem_end(<<"-----BEGIN X509 CRL-----">>) ->
+    <<"-----END X509 CRL-----">>;
+pem_end(<<"-----BEGIN EC PARAMETERS-----">>) ->
+    <<"-----END EC PARAMETERS-----">>;
+pem_end(<<"-----BEGIN EC PRIVATE KEY-----">>) ->
+    <<"-----END EC PRIVATE KEY-----">>;
+pem_end(_) ->
+    undefined.
+
+asn1_type(<<"-----BEGIN CERTIFICATE-----">>) ->
+    'Certificate';
+asn1_type(<<"-----BEGIN RSA PRIVATE KEY-----">>) ->
+    'RSAPrivateKey';
+asn1_type(<<"-----BEGIN RSA PUBLIC KEY-----">>) ->
+    'RSAPublicKey';
+asn1_type(<<"-----BEGIN PUBLIC KEY-----">>) ->
+    'SubjectPublicKeyInfo';
+asn1_type(<<"-----BEGIN DSA PRIVATE KEY-----">>) ->
+    'DSAPrivateKey';
+asn1_type(<<"-----BEGIN DH PARAMETERS-----">>) ->
+    'DHParameter';
+asn1_type(<<"-----BEGIN PRIVATE KEY-----">>) ->
+    'PrivateKeyInfo';
+asn1_type(<<"-----BEGIN ENCRYPTED PRIVATE KEY-----">>) ->
+    'EncryptedPrivateKeyInfo';
+asn1_type(<<"-----BEGIN CERTIFICATE REQUEST-----">>) ->
+    'CertificationRequest';
+asn1_type(<<"-----BEGIN PKCS7-----">>) ->
+    'ContentInfo';
+asn1_type(<<"-----BEGIN X509 CRL-----">>) ->
+    'CertificateList';
+asn1_type(<<"-----BEGIN EC PARAMETERS-----">>) ->
+    'OTPEcpkParameters';
+asn1_type(<<"-----BEGIN EC PRIVATE KEY-----">>) ->
+    'ECPrivateKey'.
+
+decode_pem_entries([], Entries) ->
+    lists:reverse(Entries);
+decode_pem_entries([<<>>], Entries) ->
+   lists:reverse(Entries);
+decode_pem_entries([<<>> | Lines], Entries) ->
+    decode_pem_entries(Lines, Entries);
+decode_pem_entries([Start| Lines], Entries) ->
+    case pem_end(Start) of
+	undefined ->
+	    decode_pem_entries(Lines, Entries);
+	_End ->
+	    {Entry, RestLines} = join_entry(Lines, []),
+	    decode_pem_entries(RestLines, [decode_pem_entry(Start, Entry) | Entries])
+    end.
+
+decode_pem_entry(Start, Lines) ->
+    Type = asn1_type(Start),
+    Cs = erlang:iolist_to_binary(Lines),
+    Decoded = base64:mime_decode(Cs),
+    io:fwrite("Decoded: ~p~n", [{Type, Decoded, not_encrypted}]).
+
+%% Ignore white space at end of line
+join_entry([<<"-----END ", _/binary>>| Lines], Entry) ->
+    {lists:reverse(Entry), Lines};
+join_entry([<<"-----END X509 CRL-----", _/binary>>| Lines], Entry) ->
+    {lists:reverse(Entry), Lines};
+join_entry([Line | Lines], Entry) ->
+    join_entry(Lines, [Line | Entry]).
+
+decode(Bin) ->
+    S = split_bin(Bin),
+    io:fwrite("Split: ~p~n", [S]),
+
+    decode_pem_entries(S, []).
+
+main([]) ->
+    CAPath  = "/Users/artem/Work/cert/apple.pem",
+    {ok, RawCA} = file:read_file(CAPath),
+
+    decode(RawCA),
+
+    P = "/Users/artem/Work/bugs/certs_encr/letsencryptauthorityx1.pem",
+    {ok, Raw} = file:read_file(P),
+
+    io:fwrite("Match: ~p~n", [re:run(Raw, "\S+")]),
+    decode(Raw),
+
+    {ok, Empty} = file:read_file("/Users/artem/Work/bugs/certs_encr/empty.pem"),
+    io:fwrite("Match: ~p~n", [re:run(Empty, "\S+")]),
+    decode(Empty).
