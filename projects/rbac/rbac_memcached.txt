@@ -89,7 +89,7 @@ This way memcached will not need to ask ns_server at all, and it will be quite
 easy to do the standalone memcached testing.
 
 This solution can become more complex with the introduction of collections, but
-thiugh we should expect a lot of collections to be created, we hardly can expect
+though we should expect a lot of collections to be created, we hardly can expect
 the RBAC roles to be separately configured for all of them. So we can hope that
 this cache will not grow too big.
       
