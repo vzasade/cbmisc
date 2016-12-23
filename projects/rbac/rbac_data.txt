@@ -1,0 +1,74 @@
+1. Built-in users
+2. Integration with memcached
+  a. new format of isasl.pw
+  b. authorization configuration
+3. Designing new built-in roles in cooperation with component owners
+4. Upgrade
+  a. upgrade of admin and ro_admin users
+  b. upgrade of bucket passwords
+  c. upgrade of built-in roles
+5. Cleaning up old user related REST API's
+6. Configurable password policy
+
+------------------------------------------------------------
+
+"settings", "rbac", "users"
+menelaus_web_rbac:handle_get_users/1
+
+"settings", "rbac", "users", UserId
+menelaus_web_rbac:handle_delete_user/2
+
+"settings", "rbac", "users", UserId
+menelaus_web_rbac:handle_put_user/2
+
+------------------------------------------------------------
+
+"settings", "readOnlyAdminName"
+handle_settings_read_only_admin_name/1
+
+"settings", "readOnlyUser"
+handle_settings_read_only_user_post/1
+
+"settings", "readOnlyUser"
+handle_read_only_user_delete/1
+
+"settings", "readOnlyUser"
+handle_read_only_user_reset/1
+
+"controller", "resetAdminPassword"
+handle_reset_admin_password/1
+
+--------------------------------------------------------------
+
+handle_get_users
+menelaus_roles:get_users
+
+user_roles
+
+
+(n_0@127.0.0.1)1> menelaus_roles:get_users().
+[{{"ldapuser",saslauthd},
+  [{roles,[ro_admin]},{name,"Ldap User"}]}]
+
+[[{user_roles,
+    [{{"ldapuser",saslauthd},
+      [{roles,[ro_admin]},{name,"Ldap User"}]}
+    ]},
+
+
+handle_put_user(UserId, Req)
+params: "roles", "name"
+Identity: saslauthd - default
+
+MB-18766: Remove more attempts to limit coresize
+Update product readme in 4.6
+MB-21612 configure cb win service to store babysitter cookie into file
+ properly escape static_config path
+
+
+* MB-21716: make drift stats names agree with ep-engine
+* correct 1 min timeout for local token regeneration
+
+
+Read, Write, SimpleStats, MetaRead, MetaWrite, XAttrRead, XattrWrite
+

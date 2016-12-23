@@ -1644,3 +1644,8 @@ All workers finished. Final statistics are:
     Lowest response time:    1.126ms
     Response time std dev:   0.9777920586237906ms
     # of errors:             0
+
+
+-----------------------
+
+install/bin/cbsasladm -p 11999 pwconv ns_server/data/n_0/isasl.pw ns_server/data/n_0/isasl.new
