@@ -1,0 +1,412 @@
+curl -v -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/ivanivanov
+    
+    curl -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+    
+
+
+[{"name":"Ivan Ivanov","id":"ivanivanov","roles":[{"role":"admin"},{"role":"bucket_admin","bucket_name":"default"}]}]
+
+
+{value,[{{"ivanivanov",saslauthd},
+         [{roles,[admin,{bucket_admin,["default"]}]},
+          {name,"Ivan Ivanov"}]}]}
+
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+
+curl -v -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/saslauthd/ivanivanov
+
+curl -v -X PUT --data "name=Ivan Ivanov&password=asdasd&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/ivanivanov
+
+curl -v -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/saslauthd/ivanivanov
+
+
+{permissionsVersion,126993894},
+
+TODO
+----
+
+*1. deliver passwords to cbauth, so components can authenticate
+*2. why cbauth is refreshed when I enter new user?
+3. do not regenerate salt and mac if password didn't change
+
+
+[ns_server:debug,2016-12-06T16:23:27.305-08:00,n_0@127.0.0.1:json_rpc_connection-index-cbauth<0.441.0>:json_rpc_connection:handle_call:157]sending jsonrpc call:{[{jsonrpc,<<"2.0">>},
+                       {id,1},
+                       {method,<<"AuthCacheSvc.UpdateDB">>},
+                       {params,
+                        [{[{specialUser,<<"@index-cbauth">>},
+                           {nodes,
+                            [{[{host,<<"127.0.0.1">>},
+                               {user,<<"_admin">>},
+                               {password,"*****"},
+                               {ports,
+                                [9000,19000,9100,9101,9102,9103,9104,9105,
+                                 19500,9500,11996,10000,12000,12001,9499,
+                                 19499]},
+                               {local,true}]}]},
+                           {buckets,
+                            [{[{name,<<"default">>},{password,"*****"}]}]},
+                           {authCheckURL,<<"http://127.0.0.1:9000/_cbauth">>},
+                           {permissionCheckURL,
+                            <<"http://127.0.0.1:9000/_cbauth/checkPermission">>},
+                           {ldapEnabled,true},
+                           {permissionsVersion,128593986},
+                           {admin,
+                            {[{user,<<"Administrator">>},
+                              {salt,<<"9RNzEI8Xiu82z/1Z7YH4kQ==">>},
+                              {mac,<<"xNoPLrQmKqQ8k/0eXG8OxA+N0QE=">>}]}},
+                           {roAdmin,
+                            {[{user,<<"roadm">>},
+                              {salt,<<"LX0rMzE5CUpIqtqsfdOeeA==">>},
+                              {mac,
+                               <<"r9+iRO09fzSYhhRS6xZ76+xsL1w=">>}]}}]}]}]}
+
+has_password_changed(
+
+calculate_auth(_Identity, undefined, _Users) ->
+    [];
+calculate_auth(Identity, Password, Users) ->
+    case proplists:get_value(Identity, Users) of
+        undefined ->
+            
+    
+
+------------------------------------------------------------------
+
+
+comb_json({struct, List}) when is_list(List) ->
+    comb_json(List);
+comb_json(List) when is_list(List) ->
+    [comb_json(A) || A <- List];
+comb_json({K, V}) ->
+    {comb_json(K), comb_json(V)};
+comb_json(V) when is_binary(V) ->
+    binary_to_list(V);
+comb_json(V) ->
+    V.
+
+
+
+Existing:
+
+buckets!create
+
+bucket[default]!delete
+
+bucket[default].data!read
+bucket[default].data!write
+
+admin.memcached!read
+admin.memcached!write
+
+memcached:
+
+Read
+bucket[default].data.docs!read
+
+Write
+bucket[default].data.docs!write
+
+SimpleStats
+bucket[default].stats!read
+
+
+DcpConsumer
+bucket[default].data.dcp!write
+
+DcpProducer
+bucket[default].data.dcp!read
+
+TapProducer
+bucket[default].data.tap!read
+
+TapConsumer
+bucket[default].data.tap!write
+
+MetaRead
+bucket[default].data.meta!read
+
+MetaWrite
+bucket[default].data.meta!write
+
+IdleConnection
+bucket[default].data.idle!read
+
+XattrRead
+bucket[default].data.xattr!read
+
+XattrWrite
+bucket[default].data.xattr!write
+
+??? CollectionManagement
+
+
+Global:
+
+Stats
+stats.memcached!read
+
+BucketManagement
+buckets!create
+bucket[default]!delete
+
+NodeManagement
+admin.memcached.node!write
+
+SessionManagement
+admin.memcached.session!write
+
+Audit
+admin.memcached!write
+buckets!create
+bucket[default]!delete
+
+AuditManagement
+admin.security.audit!write
+
+
+/**
+     * The `Read` privilege allows for reading documents in the selected
+     * bucket.
+     */
+    Read = 0x00,
+    /**
+     * The `Write` privilege allows for creating, updating or deleting
+     * documents in the selected bucket.
+     */
+    Write = 0x01,
+    /**
+     * The `SimpleStats` privilege allows for requesting basic statistics
+     * information from the system (restricted to the selected bucket)
+     */
+    SimpleStats = 0x02,
+    /**
+     * The `Stats` privilege allows for requesting all the statistics
+     * information in the system (system configuration, vbucket state,
+     * dcp information etc).
+     */
+    Stats = 0x03,
+    /**
+     * The `BucketManagement` privilege allows for bucket management
+     * (create or delete buckets, toggle vbucket states etc).
+     */
+    BucketManagement = 0x04,
+    /**
+     * The `NodeManagement` privilege allows for changing verbosity
+     * level, reloading configuration files (This privilege should
+     * be split into multiple others)
+     */
+    NodeManagement = 0x05,
+    /**
+     * The `SessionManagement` privilege allows for changing (and fetching)
+     * the session context registered by ns_server
+     */
+    SessionManagement = 0x06,
+    /**
+     * The `Audit` privilege allows for adding audit events to the
+     * audit trail
+     */
+    Audit = 0x07,
+    /**
+     * The `AuditManagement` privilege allows for reconfigure audit
+     * subsystem
+     */
+    AuditManagement = 0x08,
+    /**
+     * The `DcpConsumer` privilege allows for setting up a DCP stream in the
+     * selected bucket to apply DCP mutations.
+     */
+    DcpConsumer = 0x09,
+    /**
+     * The `DcpProducer` privilege allows for setting up a DCP stream in the
+     * selected bucket.
+     */
+    DcpProducer = 0x0a,
+    /**
+     * The `TapProducer` privilege allows for setting up a TAP stream
+     */
+    TapProducer = 0x0b,
+    /**
+     * The `TapConsumer` privilege allows for consuming TAP events
+     */
+    TapConsumer = 0x0c,
+    /**
+     * The `MetaRead` privilege allows for reading the meta information
+     * on documents.
+     */
+    MetaRead = 0x0d,
+    /**
+     * The `MetaWrite` privilege allows for updating the meta information
+     * on documents.
+     */
+    MetaWrite = 0x0e,
+    /**
+     * The `IdleConnection` privilege allows a client to hold on to an
+     * idle connection witout being disconnected.
+     */
+    IdleConnection = 0x0f,
+    /**
+     * The `XattrRead` privilege allows the connection to read the
+     * system attributes on the documents
+     */
+    XattrRead = 0x10,
+    /**
+     * The `XattrWrite` privilege allows the connection to write to the
+     * system attributes on the documents
+     */
+    XattrWrite = 0x11,
+    /**
+     * The `CollectionManagement` privilege allows the connection to create or
+     * delete collections.
+     */
+    CollectionManagement = 0x12,
+
+
+
+{roles,[admin,{bucket_admin,["default"]}
+
+
+--------------------------------------------------------------------------------------
+
+Hi Artem,
+
+I wrote this in as a markdown file in my IDE so sorry for the formatting...
+
+Cheers
+
+Trond
+
+
+# convert isasl.pw to cbsasl.pw
+
+The motivation is:
+  * Not store the password in plain text on disk anymore
+  * Not have to regenerate the HMAC's every time
+  * Avoid doing recursive HMAC's in Erlang
+
+The program to use for this is called cbsasladm and should be invoked like:
+
+    cbsasladm [-i <iterationcount>] pwconv inputfile outputfile
+
+By default the iteration count is set to 4096 (as specified in the RFC
+("For the SCRAM-SHA-1/SCRAM-SHA-1-PLUS SASL mechanism, servers SHOULD
+announce a hash iteration-count of at least 4096").
+
+The input and output file may be encrypted the same way we added encryption
+for 4.6 (if you like I could change the program so that you could do:
+
+    cbsasladm pwconv - -
+
+and have it read from stdin and write to stdout
+
+
+# The RBAC database
+
+I think the only change I did to your original proposal was that I
+added the extra layer with "buckets" so that I could have "privileges"
+which means the privileges which isn't bound directly to a bucket (like
+creating a bucket). So the format should be something like:
+
+    {
+       "user1": {
+          "buckets": [
+             "bucket1": ["Read", "Write", "SimpleStats"],
+             "bucket2": ["Read", "SimpleStats"]
+          ],
+          "privileges": ["BucketManagement"],
+       }
+    }
+
+When we're going to add support for privileges we'll no longer treat
+the user authenticated as "_admin" as root.. In fact there won't be a
+superuser anymore. What "you" need to do is to add the following entry:
+
+    {
+       "_admin": {
+          "buckets": [
+             "bucket1": ["all"],
+             ...
+          ],
+       "privileges": ["all"],
+    }
+
+Unfortunately you need to specify all of the buckets you want to be able
+to access as this database (and the access control) isn't coupled with the
+actual buckets defined in the system..
+
+The path to this file has to be provided through the tag "rbac_file" in
+the configuration. Whenever you want to invalidate that you should send
+a new command (which I haven't defined yet), but it would be an "empty"
+message just like the refresh message for isasl.pw. You're not allowed to
+modify the file in the window from when you sent the request to refresh it
+until you get the ack back. (it's opcode will most likely be 0xf7).
+
+## Predefined roles
+
+According to Don's document he want to have two different predefined
+roles. I do however think that we need to do something more (given the
+other projects we're doing for Spock.. like mobile convergence where
+we're adding extended attributes). We might have to fine-tune these
+privileges once we get more feedback from other teams.)
+
+### BucketReader
+
+My current view is that this "role" (I would have called it profile) would
+contain:
+
+    Read, SimpleStats, MetaRead, XAttrRead
+    
+That would give you:
+
+The `Read` privilege allows for reading documents in the selected bucket.
+The `SimpleStats` privilege allows for requesting basic statistics
+information from the system (restricted to the selected bucket)
+The `MetaRead` privilege allows for reading the meta information
+on documents.
+The `XattrRead` privilege allows the connection to read the system
+attributes on the documents
+
+### BucketReadWriter
+
+My current view is that this "role" would contain:
+
+    Read, Write, SimpleStats, MetaRead, MetaWrite, XAttrRead, XattrWrite
+    
+That would give you:
+
+The `Read` privilege allows for reading documents in the selected bucket.
+The `Write` privilege allows for creating, updating or deleting documents
+in the selected bucket.
+The `SimpleStats` privilege allows for requesting basic statistics
+information from the system (restricted to the selected bucket)
+The `MetaRead` privilege allows for reading the meta information
+on documents.
+The `MetaWrite` privilege allows for updating the meta information
+on documents.
+The `XattrRead` privilege allows the connection to read the system
+attributes on the documents
+The `XattrWrite` privilege allows the connection to write to the
+system attributes on the documents
+
+
+## Other components
+
+I _really_ hope that as part of this work we'll no longer tell all of
+our other components to authenticate as the same user, but could use
+new and unique "users" per component (use @indexer, @fts etc). I've
+not reached out to the component owners to figure out their needs. For
+simplicity we could probably give them the same privileges as ns_server
+initially.
+
+-------------------------------------------------------------------------------------
+
+
+Users storage:
+--------------
+
+dets: http://erlang.org/doc/man/dets.html
+
+replicated between nodes:
+doc_replication_srv
+doc_replicator
