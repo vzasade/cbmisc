@@ -1,8 +1,33 @@
+Closed-source repos in EE builds
+--------------------------------
+When doing "repo init" to get Watson or later source code, if you intend to build EE, please add "-g all". You will also need to ensure your GitHub account has an ssh key registered and set up correctly
+
+add ssh key to github
+---------------------
+https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/
+
+add github to known hosts
+-------------------------
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+install cmake
+-------------
+install from: https://cmake.org/download/
+to make available from command line:
+sudo "/Applications/CMake.app/Contents/bin/cmake-gui" --install
+
 erlang
 ------
 
+this doesn't work anymore:
 brew tap homebrew/versions
 brew install -v erlang-r16
+
+install autoconf: http://mac-dev-env.patrickbougie.com/autoconf/
+brew install unixodbc
+
+brew install --with-openssl --with-unixodbc -v https://raw.githubusercontent.com/vzasade/cbmisc/master/formula/erlang.rb
+
 
 bin:
 /usr/local/Cellar/erlang-r16/R16B03-1_2/lib/erlang/erts-5.10.4/bin
@@ -56,3 +81,29 @@ kdiff3
 git config --global merge.tool kdiff3
 git config --global mergetool.kdiff3.cmd '/Applications/kdiff3.app/Contents/MacOS/kdiff3 $BASE $LOCAL $REMOTE -o $MERGED'
 git mergetool
+
+installing pip
+--------------
+Install easy_install:
+curl https://bootstrap.pypa.io/ez_setup.py -o - | sudo python
+
+Install extern package from here: https://pypi.python.org/pypi/extern/0.0.4
+sudo python setup.py install
+
+Install pip
+sudo easy_install pip
+
+
+tool to download from s3
+------------------------
+https://github.com/couchbaselabs/s3dl
+sudo pip install git+https://github.com/couchbaselabs/s3dl.git --ignore-installed six
+
+Note: "--ignore-installed six" is needed because: https://github.com/pypa/pip/issues/3165
+
+sudo pip install awscli --ignore-installed six
+aws configure (enter keys found in email as ACCESS_KEY, SECRET_KEY)
+
+example of downloading:
+-----------------------
+aws s3 cp s3://cb-customers-secure/paypal/cb_request_13915_20160825.tar.explode/cb_request_13915/phxgencache1_20160825_013731.zip .
