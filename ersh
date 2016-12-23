@@ -9,6 +9,7 @@ else
 fi
 
 erl_cookie=$(wget -O- -q --user Administrator --password asdasd --post-data="erlang:get_cookie()." http://127.0.0.1:$node_port/diag/eval; echo)
+erl_cookie=${erl_cookie//\'}
 
 erl_node=$(wget -O- -q --user Administrator --password asdasd --post-data="erlang:node()." http://127.0.0.1:$node_port/diag/eval; echo)
 erl_node=${erl_node//\'}
@@ -24,4 +25,5 @@ if [ -z "$erl_node" ]; then
     exit 1
 fi
 
+echo erl -name $this_node -remsh $erl_node -setcookie $erl_cookie
 erl -name $this_node -remsh $erl_node -setcookie $erl_cookie
