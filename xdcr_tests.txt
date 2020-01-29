@@ -1,0 +1,240 @@
+load_with_failover (xdcr.uniXDCR.unidirectional) ... [('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py', 783, '__bootstrap', 'self.__bootstrap_inner()'), ('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py', 810, '__bootstrap_inner', 'self.run()'), ('lib/tasks/taskmanager.py', 31, 'run', 'task.step(self)'), ('lib/tasks/task.py', 75, 'step', 'self.execute(task_manager)'), ('lib/tasks/task.py', 418, 'execute', 'self.set_exception(e)'), ('lib/tasks/future.py', 264, 'set_exception', 'print traceback.extract_stack()')]
+Fri Feb  9 16:33:05 2018
+[('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py', 783, '__bootstrap', 'self.__bootstrap_inner()'), ('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py', 810, '__bootstrap_inner', 'self.run()'), ('testrunner.py', 297, 'run', '**self._Thread__kwargs)'), ('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/unittest/runner.py', 151, 'run', 'test(result)'), ('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/unittest/case.py', 395, '__call__', 'return self.run(*args, **kwds)'), ('/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/unittest/case.py', 322, 'run', 'self.setUp()'), ('pytests/xdcr/uniXDCR.py', 18, 'setUp', 'super(unidirectional, self).setUp()'), ('pytests/xdcr/xdcrnewbasetests.py', 2488, 'setUp', 'self.__setup_for_test()'), ('pytests/xdcr/xdcrnewbasetests.py', 2582, '__setup_for_test', 'self.__init_clusters()'), ('pytests/xdcr/xdcrnewbasetests.py', 2738, '__init_clusters', 'cluster.init_cluster(disabled_consistent_view)'), ('pytests/xdcr/xdcrnewbasetests.py', 1098, 'init_cluster', 'use_hostnames=self.__use_hostname).result()'), ('lib/tasks/future.py', 160, 'result', 'return self.__get_result()'), ('lib/tasks/future.py', 111, '__get_result', 'print traceback.extract_stack()')]
+summary so far suite regressions.regressiontest.RegressionTests , pass 1 , fail 0
+summary so far suite rebalance.rebalancein.RebalanceInTests , pass 2 , fail 0
+summary so far suite memcapable.WarmUpMemcachedTest , pass 1 , fail 0
+summary so far suite view.createdeleteview.CreateDeleteViewTests , pass 1 , fail 0
+summary so far suite view.viewquerytests.ViewQueryTests , pass 2 , fail 0
+summary so far suite xdcr.uniXDCR.unidirectional , pass 0 , fail 1
+failures so far...
+xdcr.uniXDCR.unidirectional.load_with_ops
+testrunner logs, diags and results are available under /Users/artem/work/vulcan/testrunner/logs/testrunner-18-Feb-09_16-17-24/test_8
+Logs will be stored at /Users/artem/work/vulcan/testrunner/logs/testrunner-18-Feb-09_16-17-24/test_9
+
+./testrunner -i b/resources/dev-4-nodes-xdcr.ini makefile=True -t xdcr.uniXDCR.unidirectional.load_with_failover,replicas=1,items=10000,ctopology=chain,rdirection=unidirection,doc-ops=update-delete,failover=source
+
+Test Input params:
+{'doc-ops': 'update-delete', 'replicas': '1', 'items': '10000', 'failover': 'source', 'makefile': 'True', 'conf_file': 'conf/simple.conf', 'num_nodes': 4, 'cluster_name': 'dev-4-nodes-xdcr', 'ctopology': 'chain', 'rdirection': 'unidirection', 'ini': 'b/resources/dev-4-nodes-xdcr.ini', 'case_number': 9, 'logs_folder': '/Users/artem/work/vulcan/testrunner/logs/testrunner-18-Feb-09_16-17-24/test_9', 'spec': 'simple'}
+[2018-02-09 16:33:05,155] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9000: True content: "/Users/artem/work/vulcan/ns_server/logs/n_0" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,156] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,157] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,178] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,183] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,207] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "panic:" "/Users/artem/work/vulcan/ns_server/logs/n_0"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,214] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,214] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,216] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,216] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,248] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,255] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,278] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "non-recoverable error from xmem client. response status=KEY_ENOENT" "/Users/artem/work/vulcan/ns_server/logs/n_0"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,286] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,287] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,306] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9001: True content: "/Users/artem/work/vulcan/ns_server/logs/n_1" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,307] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,308] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,331] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,335] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,366] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "panic:" "/Users/artem/work/vulcan/ns_server/logs/n_1"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,375] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,375] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,376] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,377] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,399] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,403] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,437] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "non-recoverable error from xmem client. response status=KEY_ENOENT" "/Users/artem/work/vulcan/ns_server/logs/n_1"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,445] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,446] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,454] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9002: True content: "/Users/artem/work/vulcan/ns_server/logs/n_2" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,455] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,455] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,489] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,494] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,517] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "panic:" "/Users/artem/work/vulcan/ns_server/logs/n_2"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,524] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,525] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,526] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,526] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,560] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,567] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,589] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "non-recoverable error from xmem client. response status=KEY_ENOENT" "/Users/artem/work/vulcan/ns_server/logs/n_2"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,596] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,597] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,615] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9003: True content: "/Users/artem/work/vulcan/ns_server/logs/n_3" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,617] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,617] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,641] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,647] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,689] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "panic:" "/Users/artem/work/vulcan/ns_server/logs/n_3"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,698] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,699] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,700] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,700] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,722] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,726] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,756] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "non-recoverable error from xmem client. response status=KEY_ENOENT" "/Users/artem/work/vulcan/ns_server/logs/n_3"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,764] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,765] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,765] - [xdcrnewbasetests:2705] INFO - {'127.0.0.1': {'non-recoverable error from xmem client. response status=KEY_ENOENT': 0, 'panic:': 0}}
+[2018-02-09 16:33:05,787] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9000: True content: "/Users/artem/work/vulcan/ns_server/logs/n_0" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,788] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,788] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,817] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,821] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,861] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "Try to fix Pipeline" "/Users/artem/work/vulcan/ns_server/logs/n_0"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,871] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,871] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,881] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9001: True content: "/Users/artem/work/vulcan/ns_server/logs/n_1" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,883] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,883] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,907] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,911] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,947] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "Try to fix Pipeline" "/Users/artem/work/vulcan/ns_server/logs/n_1"/goxdcr.log* | wc -l
+[2018-02-09 16:33:05,960] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:05,960] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:05,969] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9002: True content: "/Users/artem/work/vulcan/ns_server/logs/n_2" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:05,971] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:05,971] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:05,993] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:05,999] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:06,034] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "Try to fix Pipeline" "/Users/artem/work/vulcan/ns_server/logs/n_2"/goxdcr.log* | wc -l
+[2018-02-09 16:33:06,041] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:06,042] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:06,067] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9003: True content: "/Users/artem/work/vulcan/ns_server/logs/n_3" command: filename:absname(element(2, application:get_env(ns_server,error_logger_mf_dir))).
+[2018-02-09 16:33:06,068] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+[2018-02-09 16:33:06,068] - [remote_util:266] INFO - Connected to 127.0.0.1
+[2018-02-09 16:33:06,094] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: /sbin/sysctl -n machdep.cpu.brand_string
+[2018-02-09 16:33:06,102] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:06,128] - [remote_util:3033] INFO - running command.raw on 127.0.0.1: zgrep "Try to fix Pipeline" "/Users/artem/work/vulcan/ns_server/logs/n_3"/goxdcr.log* | wc -l
+[2018-02-09 16:33:06,136] - [remote_util:3070] INFO - command executed successfully
+[2018-02-09 16:33:06,137] - [xdcrnewbasetests:428] INFO - 0
+[2018-02-09 16:33:06,137] - [xdcrnewbasetests:2723] INFO - {'127.0.0.1': 0}
+[2018-02-09 16:33:06,137] - [xdcrnewbasetests:2486] INFO - ==== XDCRNewbasetests setup is started for test #9 load_with_failover ====
+[2018-02-09 16:33:06,138] - [xdcrnewbasetests:1183] INFO - removing xdcr/nodes settings
+[2018-02-09 16:33:06,176] - [xdcrnewbasetests:1193] INFO - cleanup [ip:127.0.0.1 port:9000 ssh_username:Administrator, ip:127.0.0.1 port:9001 ssh_username:Administrator]
+[2018-02-09 16:33:06,184] - [bucket_helper:142] INFO - deleting existing buckets [] on 127.0.0.1
+[2018-02-09 16:33:06,184] - [bucket_helper:168] INFO - sleep 2 seconds to make sure all buckets were deleted completely.
+[2018-02-09 16:33:08,210] - [cluster_helper:78] INFO - waiting for ns_server @ 127.0.0.1:9000
+[2018-02-09 16:33:08,214] - [cluster_helper:80] INFO - ns_server @ 127.0.0.1:9000 is running
+[2018-02-09 16:33:08,220] - [bucket_helper:142] INFO - deleting existing buckets [] on 127.0.0.1
+[2018-02-09 16:33:08,220] - [bucket_helper:168] INFO - sleep 2 seconds to make sure all buckets were deleted completely.
+[2018-02-09 16:33:10,244] - [cluster_helper:78] INFO - waiting for ns_server @ 127.0.0.1:9001
+[2018-02-09 16:33:10,247] - [cluster_helper:80] INFO - ns_server @ 127.0.0.1:9001 is running
+[2018-02-09 16:33:10,247] - [xdcrnewbasetests:1183] INFO - removing xdcr/nodes settings
+[2018-02-09 16:33:10,266] - [xdcrnewbasetests:1193] INFO - cleanup [ip:127.0.0.1 port:9002 ssh_username:Administrator, ip:127.0.0.1 port:9003 ssh_username:Administrator]
+[2018-02-09 16:33:10,272] - [bucket_helper:142] INFO - deleting existing buckets [] on 127.0.0.1
+[2018-02-09 16:33:10,272] - [bucket_helper:168] INFO - sleep 2 seconds to make sure all buckets were deleted completely.
+[2018-02-09 16:33:12,297] - [cluster_helper:78] INFO - waiting for ns_server @ 127.0.0.1:9002
+[2018-02-09 16:33:12,300] - [cluster_helper:80] INFO - ns_server @ 127.0.0.1:9002 is running
+[2018-02-09 16:33:12,306] - [bucket_helper:142] INFO - deleting existing buckets [] on 127.0.0.1
+[2018-02-09 16:33:12,306] - [bucket_helper:168] INFO - sleep 2 seconds to make sure all buckets were deleted completely.
+[2018-02-09 16:33:14,329] - [cluster_helper:78] INFO - waiting for ns_server @ 127.0.0.1:9003
+[2018-02-09 16:33:14,332] - [cluster_helper:80] INFO - ns_server @ 127.0.0.1:9003 is running
+[2018-02-09 16:33:14,333] - [xdcrnewbasetests:2733] INFO - Initializing all clusters...
+[2018-02-09 16:33:14,339] - [rest_client:1441] INFO - /diag/eval status on 127.0.0.1:9000: True content: [5,5] command: cluster_compat_mode:get_compat_version().
+[2018-02-09 16:33:15,175] - [task:125] INFO - server: ip:127.0.0.1 port:9000 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_0@127.0.0.1', 'uptime': u'949', 'mcdMemoryReserved': 13107, 'storageTotalRam': 9738, 'hostname': u'127.0.0.1:9000', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x107db6e10>], 'moxi': 12001, 'port': u'9000', 'version': u'5.5.0-0000-enterprise', 'memcached': 12000, 'status': u'healthy', 'clusterCompatibility': 327685, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 4676206592, 'memoryTotal': 17179869184, 'memoryQuota': 8738, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+[2018-02-09 16:33:15,176] - [rest_client:907] INFO - pools/default params : memoryQuota=8738
+[2018-02-09 16:33:15,180] - [rest_client:807] ERROR - POST http://127.0.0.1:9000/pools/default body: memoryQuota=8738 headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"_":"Total quota (8738MB) exceeds the maximum allowed quota (8714MB) on node 'n_0@127.0.0.1'"}} auth: Administrator:asdasd
+[2018-02-09 16:33:15,180] - [rest_client:942] INFO - settings/indexes params : storageMode=forestdb
+[2018-02-09 16:33:15,184] - [rest_client:807] ERROR - POST http://127.0.0.1:9000/settings/indexes body: storageMode=forestdb headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"storageMode":"Storage mode cannot be set to 'forestdb' in 5.0 enterprise edition."}} auth: Administrator:asdasd
+[2018-02-09 16:33:15,184] - [rest_client:825] INFO - settings/web params on 127.0.0.1:9000:username=Administrator&password=asdasd&port=9000
+[2018-02-09 16:33:15,226] - [task:125] INFO - server: ip:127.0.0.1 port:9001 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_1@127.0.0.1', 'uptime': u'946', 'mcdMemoryReserved': 13107, 'storageTotalRam': 9737, 'hostname': u'127.0.0.1:9001', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x107db6a50>], 'moxi': 12003, 'port': u'9001', 'version': u'5.5.0-0000-enterprise', 'memcached': 12002, 'status': u'healthy', 'clusterCompatibility': 327685, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 4666986496, 'memoryTotal': 17179869184, 'memoryQuota': 5909, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+[2018-02-09 16:33:15,226] - [rest_client:907] INFO - pools/default params : memoryQuota=8738
+[2018-02-09 16:33:15,229] - [rest_client:807] ERROR - POST http://127.0.0.1:9001/pools/default body: memoryQuota=8738 headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"_":"Total quota (8738MB) exceeds the maximum allowed quota (8713MB) on node 'n_1@127.0.0.1'"}} auth: Administrator:asdasd
+[2018-02-09 16:33:15,230] - [rest_client:942] INFO - settings/indexes params : storageMode=forestdb
+[2018-02-09 16:33:15,233] - [rest_client:807] ERROR - POST http://127.0.0.1:9001/settings/indexes body: storageMode=forestdb headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"storageMode":"Storage mode cannot be set to 'forestdb' in 5.0 enterprise edition."}} auth: Administrator:asdasd
+[2018-02-09 16:33:15,234] - [rest_client:825] INFO - settings/web params on 127.0.0.1:9001:username=Administrator&password=asdasd&port=9001
+[2018-02-09 16:33:16,270] - [task:425] INFO - adding node 127.0.0.1:9001 to cluster
+[2018-02-09 16:33:16,271] - [rest_client:1205] INFO - adding remote node @127.0.0.1:9001 to this cluster @127.0.0.1:9000
+[2018-02-09 16:33:16,284] - [rest_client:807] ERROR - POST http://127.0.0.1:9000/controller/addNode body: password=asdasd&hostname=127.0.0.1%3A9001&user=Administrator headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown ["Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8713MB."] auth: Administrator:asdasd
+[2018-02-09 16:33:16,291] - [rest_client:3058] INFO - Latest logs from UI on 127.0.0.1:
+[2018-02-09 16:33:16,292] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 5, u'text': u'Failed to add node 127.0.0.1:9001 to cluster. Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8713MB.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:33:05.105Z', u'module': u'ns_cluster', u'tstamp': 1518222785105, u'type': u'info'}
+[2018-02-09 16:33:16,292] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Change of address to "127.0.0.1" is requested.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:33:05.094Z', u'module': u'ns_cluster', u'tstamp': 1518222785094, u'type': u'info'}
+[2018-02-09 16:33:16,292] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:32:53.931977 : test_simple_dataset_stale_queries_data_modification finished \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:32:53.936Z', u'module': u'menelaus_web', u'tstamp': 1518222773936, u'type': u'warning'}
+[2018-02-09 16:33:16,292] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 11, u'text': u'Deleted bucket "default"\n', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:45.851Z', u'module': u'menelaus_web', u'tstamp': 1518222765851, u'type': u'info'}
+[2018-02-09 16:33:16,292] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Shutting down bucket "default" on \'n_0@127.0.0.1\' for deletion', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:45.089Z', u'module': u'ns_memcached', u'tstamp': 1518222765089, u'type': u'info'}
+[2018-02-09 16:33:16,293] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:32:21.009219 : test_simple_dataset_stale_queries_data_modification started \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:32:21.015Z', u'module': u'menelaus_web', u'tstamp': 1518222741015, u'type': u'warning'}
+[2018-02-09 16:33:16,293] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Bucket "default" loaded on node \'n_0@127.0.0.1\' in 0 seconds.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:19.432Z', u'module': u'ns_memcached', u'tstamp': 1518222739432, u'type': u'info'}
+[2018-02-09 16:33:16,293] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 12, u'text': u'Created bucket "default" of type: couchbase\n[{num_replicas,1},\n {replica_index,true},\n {ram_quota,9162457088},\n {flush_enabled,true},\n {num_threads,3},\n {eviction_policy,value_only},\n {conflict_resolution_type,seqno},\n {storage_mode,couchstore},\n {max_ttl,0},\n {compression_mode,"off"}]', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:19.387Z', u'module': u'menelaus_web', u'tstamp': 1518222739387, u'type': u'info'}
+[2018-02-09 16:33:16,293] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:31:38.935071 : test_employee_dataset_startkey_endkey_queries_rebalance_in finished \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:31:38.949Z', u'module': u'menelaus_web', u'tstamp': 1518222698949, u'type': u'warning'}
+[2018-02-09 16:33:16,294] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Rebalance completed successfully. (repeated 1 times)', u'shortText': u'message', u'serverTime': u'2018-02-09T16:31:28.707Z', u'module': u'ns_orchestrator', u'tstamp': 1518222688707, u'type': u'info'}
+[2018-02-09 16:33:16,302] - [rest_client:3058] INFO - Latest logs from UI on 127.0.0.1:
+[2018-02-09 16:33:16,302] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 5, u'text': u'Failed to add node 127.0.0.1:9001 to cluster. Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8713MB.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:33:05.105Z', u'module': u'ns_cluster', u'tstamp': 1518222785105, u'type': u'info'}
+[2018-02-09 16:33:16,302] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Change of address to "127.0.0.1" is requested.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:33:05.094Z', u'module': u'ns_cluster', u'tstamp': 1518222785094, u'type': u'info'}
+[2018-02-09 16:33:16,302] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:32:53.931977 : test_simple_dataset_stale_queries_data_modification finished \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:32:53.936Z', u'module': u'menelaus_web', u'tstamp': 1518222773936, u'type': u'warning'}
+[2018-02-09 16:33:16,302] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 11, u'text': u'Deleted bucket "default"\n', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:45.851Z', u'module': u'menelaus_web', u'tstamp': 1518222765851, u'type': u'info'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Shutting down bucket "default" on \'n_0@127.0.0.1\' for deletion', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:45.089Z', u'module': u'ns_memcached', u'tstamp': 1518222765089, u'type': u'info'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:32:21.009219 : test_simple_dataset_stale_queries_data_modification started \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:32:21.015Z', u'module': u'menelaus_web', u'tstamp': 1518222741015, u'type': u'warning'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Bucket "default" loaded on node \'n_0@127.0.0.1\' in 0 seconds.', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:19.432Z', u'module': u'ns_memcached', u'tstamp': 1518222739432, u'type': u'info'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 12, u'text': u'Created bucket "default" of type: couchbase\n[{num_replicas,1},\n {replica_index,true},\n {ram_quota,9162457088},\n {flush_enabled,true},\n {num_threads,3},\n {eviction_policy,value_only},\n {conflict_resolution_type,seqno},\n {storage_mode,couchstore},\n {max_ttl,0},\n {compression_mode,"off"}]', u'shortText': u'message', u'serverTime': u'2018-02-09T16:32:19.387Z', u'module': u'menelaus_web', u'tstamp': 1518222739387, u'type': u'info'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 102, u'text': u'Client-side error-report for user "Administrator" on node \'n_0@127.0.0.1\':\nUser-Agent:Python-httplib2/$Rev: 259 $\n2018-02-09 16:31:38.935071 : test_employee_dataset_startkey_endkey_queries_rebalance_in finished \n', u'shortText': u'client-side error report', u'serverTime': u'2018-02-09T16:31:38.949Z', u'module': u'menelaus_web', u'tstamp': 1518222698949, u'type': u'warning'}
+[2018-02-09 16:33:16,303] - [rest_client:3059] ERROR - {u'node': u'n_0@127.0.0.1', u'code': 0, u'text': u'Rebalance completed successfully. (repeated 1 times)', u'shortText': u'message', u'serverTime': u'2018-02-09T16:31:28.707Z', u'module': u'ns_orchestrator', u'tstamp': 1518222688707, u'type': u'info'}
+[2018-02-09 16:33:16,303] - [rest_client:1249] ERROR - add_node error : ["Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8713MB."]
+ERROR
+
+======================================================================
+ERROR: load_with_failover (xdcr.uniXDCR.unidirectional)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "pytests/xdcr/uniXDCR.py", line 18, in setUp
+    super(unidirectional, self).setUp()
+  File "pytests/xdcr/xdcrnewbasetests.py", line 2488, in setUp
+    self.__setup_for_test()
+  File "pytests/xdcr/xdcrnewbasetests.py", line 2582, in __setup_for_test
+    self.__init_clusters()
+  File "pytests/xdcr/xdcrnewbasetests.py", line 2738, in __init_clusters
+    cluster.init_cluster(disabled_consistent_view)
+  File "pytests/xdcr/xdcrnewbasetests.py", line 1098, in init_cluster
+    use_hostnames=self.__use_hostname).result()
+  File "lib/tasks/future.py", line 160, in result
+    return self.__get_result()
+  File "lib/tasks/future.py", line 112, in __get_result
+    raise self._exception
+AddNodeException: Error adding node: 127.0.0.1 to the cluster:127.0.0.1 - ["Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8713MB."]
+
+----------------------------------------------------------------------
+Ran 1 test in 11.158s
+
+
+
+
+-----------------------------------------------------------
+
+[2018-02-09 16:55:00,269] - [task:125] INFO - server: ip:127.0.0.1 port:9000 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_0@127.0.0.1', 'uptime': u'244', 'mcdMemoryReserved': 13107, 'storageTotalRam': 9800, 'hostname': u'127.0.0.1:9000', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x10ad0e450>], 'moxi': 12001, 'port': u'9000', 'version': u'5.5.0-0000-enterprise', 'memcached': 12000, 'status': u'healthy', 'clusterCompatibility': 327685, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 3980664832, 'memoryTotal': 17179869184, 'memoryQuota': 8738, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+[2018-02-09 16:55:00,269] - [task:175] INFO - quota for kv service will be 8738 MB
+
+
+----------------------------------
+
+GOOD:
+[2018-02-09 17:52:44,149] - [task:125] INFO - server: ip:127.0.0.1 port:9000 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_0@127.0.0.1', 'uptime': u'438', 'mcdMemoryReserved': 13107, 'storageTotalRam': 10133, 'hostname': u'127.0.0.1:9000', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x10ed25fd0>], 'moxi': 12001, 'port': u'9000', 'version': u'5.5.0-0000-enterprise', 'memcached': 12000, 'status': u'healthy', 'clusterCompatibility': 327685, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 4145278976, 'memoryTotal': 17179869184, 'memoryQuota': 8738, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+
+BLAH ALL {9031,10544349184}
+BLAH ALL {9031,10544349184}
+BLAH ALL {9074,10588635136}
+BLAH ALL {8912,10419687424}
+
+[ns_server:debug,2018-02-09T17:52:44.152-08:00,n_0@127.0.0.1:<0.28335.2>:memory_quota:allowed_memory_usage_max:55]
+BLAH ALL {9109,10626224128}
+[ns_server:debug,2018-02-09T17:52:44.152-08:00,n_0@127.0.0.1:<0.28335.2>:memory_quota:check_node_total_quota:122]
+BLAH TOT {8738,9109}
+
+
+------------------------------------
+
+goxdcr_rest get_controller_bucket_settings
+goxdcrEnabled in src/menelaus_web_pools.erl
+
+Pavels result:
+
+{"meta":{"id":"test","rev":"6-1513488d1f7100000000000002000006","expiration":0,"flags":33554438},"json":"{\n\"click\": 12.1312312313131231123123123123123123\n}","xattrs":{}}
+
+curl -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets/test/docs/testo -d '1'
+{"meta":{"id":"testo","rev":"1-15134e1f424200000000000002000006","att_reason":"invalid_json","expiration":0,"flags":33554438},"base64":"","xattrs":{}}
+
+------------------------
+
+Original:
+
+{"meta":{"id":"test","rev":"6-1513488d1f7100000000000002000006","expiration":0,"flags":33554438},"json":{"click":12.13123123131312},"xattrs":{}}

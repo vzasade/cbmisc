@@ -1,0 +1,949 @@
+http://127.0.0.1:9000/_uistats?bucket=test&haveTStamp=%7B%22test%22:1544139175905,%22@system%22:1544139175905,%22@xdcr-test%22:0%7D&node=127.0.0.1:9000&zoom=minute
+
+
+menelaus_stats:serve_ui_stats
+
+
+{Step, Period} = case proplists:get_value("zoom", Params) of
+                         "minute" -> {1, minute};
+                         "hour" -> {60, hour};
+                         "day" -> {1440, day};
+                         "week" -> {11520, week};
+                         "month" -> {44640, month};
+                         "year" -> {527040, year}
+                     end,
+                     
+Wnd = {Step, Period, 60},
+
+
+{Step, Period, Count}
+
+
+
+catch stats_reader:latest_specific_stats(Period, NodeS,
+                                                          Bucket, Step,
+                                                          Count, StatList);
+
+call {latest_specific, Period, Step, N, StatList}
+resample_latest_sample(Bucket, Period, Step, N),
+
+
+resample(Bucket, Period, Step, N)
+
+Seconds = N * Step,
+
+
+Time (Up To)
+60 Sec
+1 Hour
+1 Day
+8 Days
+31 Days
+366 Days
+Interval
+1 Sec
+4 Sec
+1 Min
+10 Min
+1 Hour
+6 Hour
+Samples
+60
+900
+1440
+1152
+744
+1464
+
+
+
+ns_server:debug,2019-01-28T16:52:12.942-08:00,n_0@127.0.0.1:<0.5143.0>:menelaus_stats:serve_aggregated_ui_stats:2570]BLAH AGG [{"bucket","test"},
+          {"haveTStamp",
+           "{\"test\":1548723132876,\"@system\":1548723132876,\"@xdcr-test\":0}"},
+          {"node","127.0.0.1:9000"},
+          {"zoom","minute"}]
+
+aggregated:
+http://127.0.0.1:9000/_uistats?bucket=test&haveTStamp=%7B%22test%22:1548722524518,%22@system%22:1548722524518,%22@xdcr-test%22:0%7D&zoom=minute
+
+http://Administrator:asdasd@127.0.0.1:9000/_uistats?bucket=test&haveTStamp=%7B%22test%22:1548722524518,%22@system%22:1548722524518,%22@xdcr-test%22:0%7D&zoom=minute&statName=cpu_local_ms
+
+
+
+haveTStamp:
+{"test":1548722595518,"@system":1548722595518,"@xdcr-test":0}
+
+["_uistats"] -> {{[stats], read}, fun menelaus_stats:serve_ui_stats/1};
+
+required:
+"bucket"
+
+if "statName" -> serve_aggregated_ui_stats (used in mn_analytics_service.js only)
+else -> serve_specific_ui_stats
+
+
+"haveTStamp" - what UI already has
+
+
+startTimestamp and endTimestamp - in case the number of requested stats have a matter, we need to get this info for ~10 stats at once.
+
+
+GET /_uistats
+[{
+     bucketName: <string>,                   (optional. ex: "default")
+     startTimestamp: <number>,        (optional. ex: 1533209760000)
+     endTimestamp: <number>,         (optional. ex: 1533409760000)
+     statName: <string>,                      (optional. ex: ep_active_hlc_drift"),
+     interval:                                         (the interval to return stats in milliseconds)
+     hostName: <string>                        (optional. ex: "127.0.0.1:9000" or "*")
+}]
+
+bucketName                                                                            - bucket name for bucket stats
+startTimestamp and endTimestamp                                       - range of stats. Ifrange is not provided, it returns last values 
+statName <array>  + hostName <string> ("127.0.0.1:9000") - returns stats per specific node
+statName <string> +  hostName <string> ("*")                        - returns specific stat values per each node
+statName <array>                                                                  - returns aggregated stats of all nodes
+
+
+curl -v "http://Administrator:asdasd@127.0.0.1:9000/_uistats?bucket=test&haveTStamp=%7B%22test%22:1548722524518,%22@system%22:1548722524518,%22@xdcr-test%22:0%7D&zoom=minute&statName=cpu_utilization_rate" | python -m json.tool
+
+
+
+{
+    "directory": {
+        "origTitle": "Max CPU utilization %",
+        "url": null,
+        "value": {
+            "blocks": [
+                {
+                    "blockName": "Specific Stats",
+                    "hideThis": true,
+                    "stats": [
+                        {
+                            "desc": "Percentage of CPU in use across all available cores on this server",
+                            "maxY": 100,
+                            "name": "@127.0.0.1:9000",
+                            "title": "127.0.0.1:9000"
+                        }
+                    ]
+                }
+            ],
+            "thisISSpecificStats": true
+        }
+    },
+    "interval": 1000,
+    "isPersistent": true,
+    "lastTStamp": {
+        "perNode": 1548726209876
+    },
+    "mainStatsBlock": "perNode",
+    "nextReqAfter": 0,
+    "samplesCount": 60,
+    "specificStatName": "cpu_utilization_rate",
+    "stats": {
+        "perNode": {
+            "@127.0.0.1:9000": [
+                9.637046307884857,
+                12.03007518796992,
+                11.31840796019901,
+                10.90225563909774,
+                9.72568578553616,
+                12.125,
+                12.625,
+                15.85518102372035,
+                11.90476190476191,
+                9.386733416770964,
+                14.14267834793492,
+                11.8601747815231,
+                10.0997506234414,
+                9.398496240601503,
+                12.51564455569462,
+                16.66666666666667,
+                17.94228356336261,
+                11.625,
+                13.84039900249376,
+                18.77346683354193,
+                10.875,
+                13.03258145363409,
+                9.875,
+                11.09725685785536,
+                9.273182957393484,
+                10.1123595505618,
+                14.125,
+                17.64705882352941,
+                12.96758104738155,
+                12.23470661672909,
+                9.625,
+                14.58852867830424,
+                16.81304893350063,
+                23.64779874213836,
+                17.68368617683686,
+                28.25,
+                15.31755915317559,
+                11.5,
+                9.147869674185463,
+                11.97007481296758,
+                18.125,
+                38.34586466165413,
+                20.82294264339152,
+                24.81203007518797,
+                37.57802746566792,
+                22.09737827715356,
+                12.31155778894472,
+                10.73657927590512,
+                8.706467661691542,
+                15.30740276035132,
+                8.521303258145364,
+                9.950248756218905,
+                12.01501877346683,
+                11.40350877192983,
+                11.875,
+                10.6832298136646,
+                14.03508771929824,
+                7.79874213836478,
+                8.944099378881987,
+                8.625
+            ],
+            "timestamp": [
+                1548726150877,
+                1548726151875,
+                1548726152876,
+                1548726153876,
+                1548726154877,
+                1548726155876,
+                1548726156876,
+                1548726157876,
+                1548726158877,
+                1548726159876,
+                1548726160877,
+                1548726161875,
+                1548726162876,
+                1548726163875,
+                1548726164877,
+                1548726165877,
+                1548726166877,
+                1548726167876,
+                1548726168876,
+                1548726169876,
+                1548726170876,
+                1548726171876,
+                1548726172877,
+                1548726173876,
+                1548726174877,
+                1548726175876,
+                1548726176877,
+                1548726177877,
+                1548726178876,
+                1548726179876,
+                1548726180877,
+                1548726181877,
+                1548726182876,
+                1548726183875,
+                1548726184876,
+                1548726185875,
+                1548726186876,
+                1548726187876,
+                1548726188877,
+                1548726189877,
+                1548726190877,
+                1548726191876,
+                1548726192876,
+                1548726193876,
+                1548726194877,
+                1548726195875,
+                1548726196876,
+                1548726197875,
+                1548726198876,
+                1548726199876,
+                1548726200876,
+                1548726201877,
+                1548726202876,
+                1548726203876,
+                1548726204876,
+                1548726205876,
+                1548726206877,
+                1548726207875,
+                1548726208876,
+                1548726209876
+            ]
+        }
+    }
+}
+"
+----------------------------------------------
+
+get_samples_for_system_or_bucket_stat
+
+get_samples_from_one_of_kind
+
+get_samples_for_kind
+
+get_samples_for_stat
+
+menelaus_stats_gatherer:gather_stats
+
+gather_op_stats
+
+invoke_archiver
+
+stats_reader:latest_specific_stats
+
+stats_archiver:latest_sample(Bucket, Period).
+
+table(Bucket, Period),
+
+
+starting timestamp
+1548722524518
+
+[ns_server:debug,2019-01-29T17:20:27.056-08:00,n_0@127.0.0.1:<0.776.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:410]BLAH GET {"test","cpu_utilization_rate",undefined,{1,minute,60}}
+[ns_server:debug,2019-01-29T17:20:27.059-08:00,n_0@127.0.0.1:<0.776.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:413]BLAH RES {[[{1548811204849,27.805486284289277},
+            {1548811205848,11.889862327909887},
+            {1548811206848,10.790464240903388},
+            {1548811207848,11.801242236024844},
+            {1548811208847,14.949748743718592},
+            {1548811209848,11.875},
+            {1548811210848,8.852867830423941},
+            {1548811211848,9.774436090225564},
+            {1548811212847,11.83063511830635},
+            {1548811213847,12.531328320802006},
+            {1548811214847,40.19975031210986},
+            {1548811215848,23.30827067669173},
+            {1548811216848,20.34956304619226},
+            {1548811217849,21.777221526908637},
+            {1548811218848,10.211706102117061},
+            {1548811219848,7.653701380175659},
+            {1548811220848,8.592777085927771},
+            {1548811221848,5.381727158948686},
+            {1548811222848,8.145363408521304},
+            {1548811223848,6.60024906600249},
+            {1548811224848,9.86267166042447},
+            {1548811225848,10.25},
+            {1548811226848,5.269761606022585}]],
+
+
+[ns_server:debug,2019-01-29T17:21:48.800-08:00,n_0@127.0.0.1:<0.600.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:410]BLAH GET {"test","cpu_utilization_rate",undefined,{60,hour,60}}
+[ns_server:debug,2019-01-29T17:21:48.804-08:00,n_0@127.0.0.1:<0.600.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:413]BLAH RES {[[{1548807660000,5.472425605070074},
+            {1548807720000,5.561086482694205},
+            {1548807780000,5.705958399776141},
+            {1548807840000,5.636471937070311},
+            {1548807900000,6.035617917513159},
+            {1548807960000,7.506334044400589},
+            {1548808020000,5.861687611066747},
+            {1548808080000,6.051865730843535},
+            {1548808140000,5.933899849523095},
+            {1548808200000,6.083535440793927},
+            {1548808260000,6.112279011990955},
+            {1548808320000,6.013599440378035},
+            {1548808380000,5.948737499812192},
+            {1548808440000,6.0224511918861054},
+            {1548808500000,6.08372052029341},
+            {1548808560000,6.054847081752116},
+            {1548808620000,6.672582195958683},
+            {1548808680000,6.760406022753837},
+            {1548808740000,6.073587187131371},
+            {1548808800000,6.594658800492265},
+            {1548808860000,6.314879810488879},
+            {1548808920000,6.822140377801261},
+            {1548808980000,7.029700237414744},
+            {1548809040000,7.33728033541172},
+            {1548809100000,6.5149767580214055},
+            {1548809160000,5.577458072555142},
+            {1548809220000,5.409778966126036},
+            {1548809280000,5.488283631983618},
+            {1548809340000,5.555579430553627},
+            {1548809400000,5.656539836414866},
+            {1548809460000,5.492291729785333},
+            {1548809520000,6.454318629519695},
+            {1548809580000,8.073934481782347},
+            {1548809640000,5.999169976972183},
+            {1548809700000,6.06683872331709},
+            {1548809760000,6.844455360712962},
+            {1548809820000,6.714602579869251},
+            {1548809880000,6.192890332346227},
+            {1548809940000,6.9529610001119275},
+            {1548810000000,6.277277520363856},
+            {1548810060000,5.7916616095299895},
+            {1548810120000,6.782201806816206},
+            {1548810180000,7.00885113205393},
+            {1548810240000,5.842615289891466},
+            {1548810300000,5.721107887504129},
+            {1548810360000,5.8639462879219595},
+            {1548810420000,5.8346769598086246},
+            {1548810480000,6.005712278184792},
+            {1548810540000,6.27124579476033},
+            {1548810600000,5.832452074201745},
+            {1548810660000,5.856133513609743},
+            {1548810720000,6.493744087056825},
+            {1548810780000,5.940888663513163},
+            {1548810840000,6.263262175592287},
+            {1548810900000,5.9788696305023485},
+            {1548810960000,6.701683769445199},
+            {1548811020000,6.2818140417423916},
+            {1548811200000,11.584598488212768},
+            {1548811260000,7.21579365456358}]],
+          ['n_0@127.0.0.1']}
+
+
+ns_server:debug,2019-01-29T17:24:06.466-08:00,n_0@127.0.0.1:<0.356.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:410]BLAH GET {"test","cpu_utilization_rate",undefined,{1440,day,60}}
+[ns_server:debug,2019-01-29T17:24:06.471-08:00,n_0@127.0.0.1:<0.356.0>:menelaus_stats:get_samples_for_system_or_bucket_stat:413]BLAH RES {[[{1548724320000,10.223429165157548},
+            {1548725760000,9.646099869872593},
+            {1548727200000,10.055403627562919},
+            {1548728640000,9.166312197302542},
+            {1548730080000,11.530897128159745},
+            {1548731520000,9.384045308832016},
+            {1548732960000,10.629186394665869},
+            {1548734400000,14.553639852618112},
+            {1548735840000,11.232379613214313},
+            {1548737280000,9.707018744243612},
+            {1548738720000,8.241443115699722},
+            {1548740160000,8.228850522075808},
+            {1548741600000,12.061157148318197},
+            {1548743040000,9.844024159658474},
+            {1548744480000,7.764724778755023},
+            {1548745920000,11.771852063122285},
+            {1548753120000,10.408456827977057},
+            {1548790560000,18.270356305764356},
+            {1548792000000,17.060707258079567},
+            {1548793440000,9.703097525109103},
+            {1548794880000,6.768239994192022},
+            {1548796320000,6.566975359377801},
+            {1548797760000,6.768169372803083},
+            {1548799200000,8.490145601972927},
+            {1548800640000,6.566738293418481},
+            {1548802080000,5.806732328082449},
+            {1548803520000,6.045084944270446},
+            {1548804960000,10.294802168676235},
+            {1548806400000,5.934428038857718},
+            {1548807840000,6.242229379753764},
+            {1548809280000,6.201452410941729},
+            {1548810720000,8.572623979715477}]],
+
+
+{1, minute}
+Step = 1 sec
+Dur = 1 min
+
+{60, hour}
+Step = 1 min
+Dur = 15 hrs
+
+{1440, day}
+Step = 24min
+Dur = 24 days
+
+{11520, week}
+Step = 3.2 hrs
+Dur = 19.2 weeks
+
+{44640, month} (31 day)
+step = 12.4 hrs
+dur = 24.8 months
+
+{527040, year}
+Step = 6.1 days
+Dur = 24 years
+
+
+----------------------------------------
+Intervals between 2 samples
+
+Step = 1
+
+minute 1      1 sec
+hour   4      4 sec
+day    60     1 min
+month  1800   30 min
+year   21600 (6 hrs)
+
+
+Step - in seconds
+
+
+------------------------------
+
+{1549329600000,180000,15.102505284714148},
+   {1549329660000,60000,8.637351428310009},
+   {1549329720000,60000,7.29426433915212},
+   {1549329840000,120000,13.485677230480748},
+   {1549329844000,4000,35.140520357273004},
+   {1549329848000,4000,30.765942873080455},
+   {1549329852000,4000,12.579321119710706},
+   {1549329856000,4000,10.06639539862063},
+
+(n_0@192.168.0.2)18> rp(menelaus_stats:ttt("test", "cpu_utilization_rate", 1549329600000, 1549329856000, 1)).
+{[[{1549329600000,undefined,15.178930012331259},
+   {1549329660000,60000,8.641326714711209},
+   {1549329720000,60000,8.361277824416804},
+   {1549329780000,60000,9.12313727791832},
+   {1549329840000,60000,14.293575969333979}],
+
+[{1549329600000,undefined,15.102505284714148},
+   {1549329660000,60000,8.637351428310009},
+   {1549329720000,60000,7.29426433915212},
+   {1549329840000,120000,13.485677230480748}]],
+
+
+
+-   {1549329600000,180000,15.102505284714148},
+-   {1549329660000,60000,8.637351428310009},
+-   {1549329720000,60000,7.29426433915212},
+-   {1549329840000,120000,13.485677230480748},
+
+{1549329900000,60000,9.247133837715955},
+   {1549329960000,60000,9.545593159345527},
+   {1549329984000,24000,10.13125387360438},
+   {1549329988000,4000,8.533563882264218},
+   {1549329992000,4000,9.536251736771947},
+   {1549329996000,4000,10.702735952863765},
+   {1549330000000,4000,10.147980936681897},
+
+
+------------------------
+
+[ns_server:debug,2019-02-04T18:50:29.818-08:00,n_0@192.168.0.2:<0.1042.0>:menelaus_stats:get_samples_for_stat:378]BLAH GATH {"@system","cpu_utilization_rate",
+           ['n_0@192.168.0.2','n_1@127.0.0.1'],
+           0,
+           {20,year,1464}},
+RES: {[[]],['n_0@192.168.0.2']}
+
+
+[ns_server:debug,2019-02-04T18:51:53.036-08:00,n_1@127.0.0.1:stats_reader-@system<0.452.0>:stats_reader:resample:238]BLAH RESAMPLE {"@system",year,30,1464}
+[ns_server:debug,2019-02-04T18:51:53.036-08:00,n_0@192.168.0.2:<0.1536.0>:menelaus_stats:get_samples_for_stat:378]BLAH GATH {"@system","cpu_utilization_rate",
+           ['n_0@192.168.0.2','n_1@127.0.0.1'],
+           0,
+           {30,year,1464}},
+RES: {[[{1548914400000,9.266640816453876}],
+       [{1548914400000,9.268122800075316},{1548957600000,19.290365502707903}]],
+      ['n_0@192.168.0.2','n_1@127.0.0.1']}
+
+
+---------------------------------------------------------
+
+(n_0@192.168.0.2)1> menelaus_stats:get_samples_for_stat("@system","cpu_utilization_rate", ['n_0@192.168.0.2','n_1@127.0.0.1'], 0, {20,year,1464}).
+{[[]],['n_0@192.168.0.2']}
+(n_0@192.168.0.2)2> menelaus_stats:get_samples_for_stat("@system","cpu_utilization_rate", ['n_0@192.168.0.2','n_1@127.0.0.1'], 0, {30,year,1464}). 
+{[[{1548914400000,9.266640816453876}],
+  [{1548914400000,9.268122800075316},
+   {1548957600000,19.290365502707903}]],
+ ['n_0@192.168.0.2','n_1@127.0.0.1']}
+(n_0@192.168.0.2)3> menelaus_stats:get_samples_for_stat("@system","cpu_utilization_rate", ['n_0@192.168.0.2','n_1@127.0.0.1'], 0, {40,year,1464}).
+{[[{1548914400000,9.266640816453876}],
+  [{1548914400000,9.268122800075316},
+   {1548957600000,19.290365502707903}]],
+ ['n_0@192.168.0.2','n_1@127.0.0.1']}
+(n_0@192.168.0.2)4> menelaus_stats:get_samples_for_stat("@system","cpu_utilization_rate", ['n_0@192.168.0.2','n_1@127.0.0.1'], 0, {1,year,1464}). 
+{[[{1548720000000,10.728593164458456},
+   {1548741600000,10.728911120369808},
+   {1548784800000,9.941362771675507},
+   {1548806400000,7.074327189053261},
+   {1548828000000,7.805853447689978},
+   {1548892800000,7.976879600761243},
+   {1548914400000,9.266640816453876}],
+  [{1548806400000,7.759709654280454},
+   {1548828000000,7.835383543526818},
+   {1548892800000,7.980564804710987},
+   {1548914400000,9.268122800075316},
+   {1548957600000,19.290365502707903}]],
+ ['n_0@192.168.0.2','n_1@127.0.0.1']}
+(n_0@192.168.0.2)5> menelaus_stats:get_samples_for_stat("@system","cpu_utilization_rate", ['n_0@192.168.0.2','n_1@127.0.0.1'], 0, {1,year,1464}).
+{[[{1548720000000,10.728593164458456},
+   {1548741600000,10.728911120369808},
+   {1548784800000,9.941362771675507},
+   {1548806400000,7.074327189053261},
+   {1548828000000,7.805853447689978},
+   {1548892800000,7.976879600761243},
+   {1548914400000,9.266640816453876}],
+  [{1548806400000,7.759709654280454},
+   {1548828000000,7.835383543526818},
+   {1548892800000,7.980564804710987},
+   {1548914400000,9.268122800075316},
+   {1548957600000,19.290365502707903}]],
+ ['n_0@192.168.0.2','n_1@127.0.0.1']}
+
+{Period, Seconds, Count}
+archives() ->
+    [{minute, 1,     60},
+     {hour,   4,     900},
+     {day,    60,    1440}, % 24 hours
+     {week,   600,   1152}, % eight days (computer weeks)
+     {month,  1800,  1488}, % 31 days
+     {year,   21600, 1464}]. % 366 days
+
+%% @doc Truncate a timestamp to the nearest multiple of N seconds.
+trunc_ts(TS, N) ->
+    TS - (TS rem (N*1000)).
+
+
+{"@system",year,20,1464}
+
+Seconds = N * Step.
+
+
+
+BLAH RESAMPLE {"@system",year,20,1464}
+BLAH OLDEST {1548957600000,1548928320500}
+BLAH TS {1548957600000,undefined,1548957600000}
+BLAH GATH {"@system","cpu_utilization_rate",
+           ['n_0@192.168.0.2','n_1@127.0.0.1'],
+           0,
+           {20,year,1464}},
+RES: {[[]],['n_0@192.168.0.2']}
+
+
+
+BLAH RESAMPLE {"@system",year,30,1464}
+BLAH OLDEST {1548957600000,1548913680500}
+BLAH TS {1548914400000,undefined,1548914400000}
+BLAH TS {1548957600000,1548914400000,1548957600000}
+
+BLAH GATH {"@system","cpu_utilization_rate",
+           ['n_0@192.168.0.2','n_1@127.0.0.1'],
+           0,
+           {30,year,1464}},
+RES: {[[{1548914400000,9.266640816453876}],
+       [{1548914400000,9.268122800075316},{1548957600000,19.290365502707903}]],
+      ['n_0@192.168.0.2','n_1@127.0.0.1']}
+
+
+last key: 1548957600000,
+oldest: 1548928320500 - 1548913680500
+diff: 1464 sec
+
+
+
+-----------------
+
+http://127.0.0.1:9000/pools/default/serverGroups/0/addNode
+menelaus_web_cluster:handle_add_node_to_group
+do_handle_add_node
+
+
+http://127.0.0.1:9002/node/controller/doJoinCluster
+
+menelaus_web_cluster:handle_join
+/controller/addNodeV2
+menelaus_web_cluster:handle_add_node
+do_handle_add_node
+ns_cluster:add_node_to_group
+do_add_node
+do_add_node_with_connectivity
+POST /engageCluster2
+
+remote:
+menelaus_web_cluster:handle_engage_cluster2
+ns_cluster:engage_cluster
+
+
+Hey Pavel
+ 
+Thanks for your replies and thanks for being flexible.
+ 
+Given both Artem and I feel pretty strongly that the user UI configuration should be one JSON payload, I think we should go this way. Some further thoughts:
+ 
+For now we can simply support GET and PUT against the user UI configuration. However, later, if we think it’s important we can support ways to update sub-objects inside the structure based by ID / name. This makes it simple to store inside the server – there’s just one UI configuration object per user. It’s easy to manage deletion, we don’t need to reference count upon cascade delete when object go out of scope etc.
+Within this JSON payload I think you get a lot of freedom to design your schema. I would recommend that you keep it simple first (maybe just “Views” and “Graphs” for now; later if you need groups of graphs you can add them.) But I think how you manage the stuff inside the payload can substantially be at your discretion.
+Sharing
+Within the same user.
+I think with the flexibility to design your own schema you can have it be the case that if a user has defined a graph in a view on one page, he can use the same graph on another page. Or a whole View could be reused. In these cases if the view is modified by the user, you can have it be the case that the view is similarly modified on all pages.
+Across users
+I presume this case we’ll come to later. But across users, at least for now I think the semantic should be a “copy” semantic. If you share your view with me, I get a copy of it to do with what I will. I might delete one graph from it that I don’t care about.
+System views (scenarios)
+Instead of having a configuration file – maybe these are scenarios that are created by the root Administrator?
+ 
+@Rob – I believe that the suggestions above will allow us to get all the flexibility we need.
+ 
+On the stats API: Artem is looking at your proposal Pavel. He knows what you want & I believe will come back to you with a proposal that meets your needs but might be slightly different from what you proposed.
+ 
+Thanks guys,
+ 
+-dave
+
+GET /settings/rbac/profiles
+GET /settings/rbac/profiles/@self
+GET /settings/rbac/profiles/<domain>/<user>
+
+PUT /settings/rbac/profiles/@self
+PUT /settings/rbac/profiles/<domain>/<user>
+
+DELETE /settings/rbac/profiles/@self
+DELETE /settings/rbac/profiles/<domain>/<user>
+
+
+menelaus_web_rbac:handle_get_profiles/1
+
+menelaus_web_rbac:handle_get_profile/2
+
+menelaus_web_rbac:handle_put_profile/2
+
+menelaus_web_rbac:handle_delete_profile/2
+
+
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles
+
+_uistats?bucket=test&haveTStamp=%7B%22test%22:1548722524518,%22@system%22:1548722524518,%22@xdcr-test%22:0%7D&zoom=minute&statName=cpu_utilization_rate" | python -m json.tool
+
+
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles | python -m json.tool
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles/@self | python -m json.tool
+
+curl -v -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles/@self
+
+curl -v -X PUT http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles/@self -d "{%22test%22:123}"
+
+
+
+curl -v -X PUT http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/profiles/@self -d '{"test":123, "blah":[456, 4], "foo":{"a":"b", "c":"d"}}'
+
+
+NewEndTS = Now + EndTS
+
+EndTS = NewEndTS - Now
+
+BLAH AA [cpu_utilization_rate,<<"cpu_utilization_rate">>]
+
+gather_needed_stats returns:
+[ns_server:debug,2019-02-26T11:39:13.701-08:00,n_0@127.0.0.1:<0.358.0>:menelaus_stats:get_samples_for_stat:375]BLAH [{'n_0@127.0.0.1',
+          [{stat_entry,1551209943146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,32.5625}]},
+           {stat_entry,1551209944146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,31.994981179422837}]},
+           {stat_entry,1551209945146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,21.64179104477612}]},
+           {stat_entry,1551209946146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,13.174404015056462}]},
+           {stat_entry,1551209947146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,18.28358208955224}]},
+           {stat_entry,1551209948146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,23.366834170854272}]},
+           {stat_entry,1551209949146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,10.46077210460772}]},
+           {stat_entry,1551209950146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,8.635794743429287}]},
+           {stat_entry,1551209951146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,10.875}]},
+           {stat_entry,1551209952146,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,11.72069825436409}]},
+           {stat_entry,1551209953147,
+               [{<<"cpu_utilization_rate">>,undefined},
+                {cpu_utilization_rate,5.012531328320802}]}]}]
+
+
+after applying extractor:
+
+[[{1551210106147,4.613466334164588},
+          {1551210107147,5.75},
+          {1551210108147,10.137672090112641},
+          {1551210109147,5.912596401028278},
+          {1551210110147,9.429280397022332},
+          {1551210111147,7.133917396745932},
+          {1551210112147,5.610972568578553},
+          {1551210113147,5.617977528089888},
+          {1551210114147,8.98876404494382},
+          {1551210115147,4.9937578027465666},
+          {1551210116147,4.630788485607009},
+          {1551210118147,5.012531328320802},
+          {1551210149861,56.16010006253909},
+          {1551210150861,6.973848069738481},
+          {1551210151862,8.614232209737828},
+          {1551210152861,6.132665832290363},
+          {1551210153861,5.506883604505632},
+          {1551210154861,6.6499372647427855},
+          {1551210155861,7.596513075965131},
+          {1551210156861,7.375},
+          {1551210157861,5.992509363295881},
+          {1551210158861,9.022556390977444},
+          {1551210159861,5.493133583021224},
+          {1551210160862,6.265664160401003},
+          {1551210161861,9.363295880149813},
+          {1551210162862,9.440993788819876},
+          {1551210163861,11.543287327478042},
+          {1551210164861,5.520702634880803}]]
+
+
+-record(stat_entry, {timestamp :: integer(),
+                     values :: [{binary() | atom(), number() | undefined}]}).
+
+
+
+         [{'n_0@192.168.0.2',
+              [{stat_entry,1551294120000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,10.859609857441143}]},
+               {stat_entry,1551294180000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,18.37756282221033}]},
+               {stat_entry,1551294240000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,82.0351581921417}]},
+               {stat_entry,1551295140000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,14.001426038985365}]},
+               {stat_entry,1551295200000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,8.913018077620775}]},
+               {stat_entry,1551295260000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,8.63098696173281}]},
+               {stat_entry,1551295320000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,7.916722798547597}]},
+               {stat_entry,1551295500000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,16.589353699085432}]},
+               {stat_entry,1551295560000,
+                   [{<<"cpu_utilization_rate">>,undefined},
+                    {cpu_utilization_rate,10.258280088093365}]}]},
+
+
+
+curl -v http://Administrator:asdasd@localhost:9000/settings/developerPreview -X POST -d 'enabled=true'
+curl -"http://Administrator:asdasd@localhost:9000/pools/default/nodeServices" | python -m json.tool
+
+terse_bucket_info_uploader
+ns_memcached_sup
+single_bucket_kv_sup
+ns_bucket_sup
+ns_bucket_worker_sup
+ns_server_sup
+
+
+ns_memcached_sockets_pool
+ns_server_sup
+
+
+
+SetClusterConfig use the bucket name in the key,
+and the revision number in the extras section
+
+
+set_cluster_config(Sock, Blob) ->
+    RV = cmd(?CMD_SET_CLUSTER_CONFIG, Sock, undefined, undefined,
+             {#mc_header{}, #mc_entry{key = <<"">>, data = Blob}},
+             infinity),
+    case RV of
+        {ok, #mc_header{status=?SUCCESS}, _, _} ->
+            ok;
+        Other ->
+            process_error_response(Other)
+    end.
+
+
+ok = ns_memcached:set_cluster_config(BucketName, JSON);
+
+
+Example of input json
+
+[{
+    "stats": ["cpu_utilization_rate"],
+    "startTS": -36000,
+    "nodes": ["127.0.0.1:9001", "192.168.0.2:9000"],
+    "step": 4
+},
+{
+    "bucket": "test",
+    "stats": ["ops", "couch_total_disk_size"],
+    "startTS": 1571252628000,
+    "endTS": 1571252629000,
+    "step": 1,
+    "nodes": ["127.0.0.1:9001", "192.168.0.2:9000"],
+    "aggregate": "true"
+}]
+
+Supported parameters:
+
+Parameter "bucket" should contain bucket name. This parameter can be omitted for non bucket related (system) stats.
+
+Parameter "stats" should contain an array of requested stats.
+
+Parameter "nodes" should contain the list of nodes from which the samples are requested. If "nodes" is not specified, the samples will be grabbed from all nodes relevant to the stat.
+
+Parameter "aggregate": "true" should be set if the samples need to be aggregated across nodes specified in "nodes" parameter.
+
+Parameter "step" - desired gap between 2 subsequent samples in seconds. Default = 1. 
+
+Examples of timestamp parameters:
+
+get all samples between 2 timestamps
+"startTS": 1571252628000
+"endTS": 1571252772000
+
+get all samples from beginning of time to the timestamp:
+"endTS": 1571252629000
+
+get all samples between timestamp and now:
+"startTS": 1571252629000
+
+get all collected samples:
+no endTS or startTS present
+
+get all samples for last hour:
+"startTS": -3600000
+    
+get all samples between an hour ago and half an hour ago
+"startTS": -3600000
+"endTS": -1800000
+
+
+
+-----------------------------------------
+
+                           {stat_entry,2840000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.0}]},
+                           {stat_entry,2836000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]},
+                           {stat_entry,2832000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]},
+                           {stat_entry,2828000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]},
+                           {stat_entry,2824000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]},
+                           {stat_entry,2820000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]},
+                           {stat_entry,2816000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]}],
+[ns_server:debug,2019-11-09T13:04:33.619-08:00,n_0@127.0.0.1:<0.664.0>:menelaus_stats:get_samples_for_stat:394]BLAH WND {1,day,1440} ST {[{stat_entry,1573333440000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.0}]},
+                           {stat_entry,3020000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.0}]},
+                           {stat_entry,2960000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.0}]},
+                           {stat_entry,2900000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.0}]},
+                           {stat_entry,2840000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,0.25}]},
+                           {stat_entry,2780000,
+                               [{<<"query_requests">>,undefined},
+                                {query_requests,undefined}]}],
+                          []}
+
+
+---------------------------------------
+
+OPTIMIZATION:
+memoize kind, 

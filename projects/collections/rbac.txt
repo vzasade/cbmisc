@@ -1,0 +1,39 @@
+menelaus_web_rbac
+menelaus_roles
+
+
+Get rid of:
+calculate_possible_param_values
+
+
+Used in:
+build_compiled_roles
+produce_roles_by_permission
+validate_roles
+
+
+Auth code path:
+            PossibleValues = get_possible_param_values(ParamsDef, AllValues),
+            case find_matching_value(ParamsDef, Params, PossibleValues) of
+
+ParamDefs : [atom()]  -  currently atom() only can be 'bucket_name'
+Params : [rbac_role_param()]
+
+
+Proposed names:
+bucket_name
+scope
+collection
+data_unit = bucket_name | scope | collection
+
+Is's:
+BucketId
+{BucketId, ScopeId}
+{BucketId, ScopeId, CollectionId}
+
+
+REST code path:
+produce_roles_by_permission -> expand_params -> get_possible_param_values
+
+
+1. Drop multiple params ?????

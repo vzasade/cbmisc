@@ -16,3 +16,70 @@ Example of usage: http://review.couchbase.org/#/c/16460/
 Measuring views perf:
 ---------------------
 ./run --queries 10000 --workers 1 --query-url 'http://test:asdasd@localhost:9500/test/_design/dev_bbb/_view/bbb?limit=10&stale=update_after' --output-times after
+
+Read:
+-----
+http://dieswaytoofast.blogspot.ca/2012/12/erlang-binaries-and-garbage-collection.html
+https://blog.heroku.com/logplex-down-the-rabbit-hole
+http://www.erlang-in-anger.com/
+
+START Proc Mem: {memory,42256}, Proc BMem: {0,0}, Erl Mem: [{total,240520424},
+                                                            {processes,
+                                                             23954920},
+                                                            {processes_used,
+                                                             23942816},
+                                                            {system,216565504},
+                                                            {atom,594537},
+                                                            {atom_used,583068},
+                                                            {binary,3030976},
+                                                            {code,15121812},
+                                                            {ets,193053328}]
+
+[ns_server:debug,2017-08-28T10:26:23.536-07:00,n_0@127.0.0.1:<0.556.0>:diag_handler:log_memory_info:574]Before write_ets_tables for {'n_0@127.0.0.1',ets_tables} Proc Mem: {memory,
+                                                                    306587856}, Proc BMem: {2105359,
+                                                                                            214686096}, Erl Mem: [{total,
+                                                                                                                   1093371576},
+                                                                                                                  {processes,
+                                                                                                                   330569192},
+                                                                                                                  {processes_used,
+                                                                                                                   330510496},
+                                                                                                                  {system,
+                                                                                                                   762802384},
+                                                                                                                  {atom,
+                                                                                                                   654217},
+                                                                                                                  {atom_used,
+                                                                                                                   647402},
+                                                                                                                  {binary,
+                                                                                                                   549056480},
+                                                                                                                  {code,
+                                                                                                                   15134486},
+                                                                                                                  {ets,
+                                                                                                                   193171160}]  
+
+
+curl -u Administrator:asdasd http://127.0.0.1:9000/diag?noLogs=1
+
+
+ do_diag_per_node_binary() ->
+    RV = work_queue:submit_sync_work(
+           diag_handler_worker,
+           fun () ->
+                   (catch collect_diag_per_node_binary(40000))
+           end),
+     work_queue:submit_sync_work(
+       diag_handler_worker,
+       fun () ->
+              erlang:garbage_collect(self())
+      end),
+    RV.
+ 
+write_processes(Resp, Node, Key, Processes) ->
+    write_chunk_format(Resp, "per_node_~p(~p) =~n", [Key, Node]),
+    lists:foreach(
+      fun (Process) ->
+              misc:executing_on_new_process(
+                fun () ->
+                         write_chunk_format(Resp, "     ~p~n", [Process])
+                end)
+      end, Processes),
+    Resp:write_chunk(<<"\n\n">>).

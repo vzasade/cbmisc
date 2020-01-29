@@ -1,0 +1,24 @@
+https://issues.couchbase.com/browse/MB-20860
+
+Explanation of CCCP for java SDK:
+
+Java SDK lets users to decide whether they want to load the config through HTTP or CCCP using the bootstrap options. They recommend to keep the HTTP option enabled, as a fallback if CCCP is disabled.
+http://developer.couchbase.com/documentation/server/current/sdk/java/client-settings.html
+SDK code for config refresher – both CCCP & HTTP streaming is here: 
+https://github.com/couchbase/couchbase-jvm-core/tree/master/src/main/java/com/couchbase/client/core/config/refresher
+This is where the CCCP refresher sets the poll interval to every 10s. This regular polling was added because under certain conditions, they missed topology changes for non-KV nodes.
+https://github.com/couchbase/couchbase-jvm-core/blob/master/src/main/java/com/couchbase/client/core/config/refresher/CarrierRefresher.java#L73
+Added by http://review.couchbase.org/#/c/54875/
+This is where the refresh/config load using CCCP actually happens. It cycles through all nodes, one node at a time, trying to load the bucket config.  
+https://github.com/couchbase/couchbase-jvm-core/blob/master/src/main/java/com/couchbase/client/core/config/refresher/CarrierRefresher.java#L162
+Non-KV nodes are skipped as expected: http://review.couchbase.org/#/c/56639/
+This where the SDK generates the request to get the bucket config from memcached.
+https://github.com/couchbase/couchbase-jvm-core/blob/afae9f84ad3ff3cb07808794a5dd185373f40e82/src/main/java/com/couchbase/client/core/endpoint/kv/KeyValueHandler.java#L293
+And, to close the loop for those new/not aware: 
+When ns-server sends the terse bucket info to memcached, it includes service info for AllServers (i.e. Non-KV nodes as well). 
+http://src.couchbase.org/source/xref/trunk/ns_server/src/bucket_info_cache.erl#224
+That is:
+ns_server on KV nodes sends terse_bucket_info (includes non-KV topology) to local memcached 
+SDK refresh sends bucket config request to memcached on KV nodes to retrieve the terse bucket info. It receives non-KV topology as part of it.
+
+

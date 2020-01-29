@@ -1,0 +1,117 @@
+couch_auth_cache -> couch_httpd_auth, couch_httpd_oauth
+
+
+16:44:31 C:\Jenkins\workspace\couchdb-gerrit-views-master-master0\testrunner>python scripts/start_cluster_and_run_tests.py "cmake --build ..\..\build --target" b/resources/dev-single-node.ini conf/view-conf/py-viewmerge.conf   || goto :error 
+16:44:31 [1/1] cmd.exe /C "cd /D C:\Jenkins\workspace\couchdb-gerrit-views-master-master0\ns_server && "C:\Program Files\CMake\bin\cmake.exe" -E remove_directory data && "C:\Program Files\CMake\bin\cmake.exe" -E remove_directory coverage && "C:\Program Files\CMake\bin\cmake.exe" -E remove_directory couch && "C:\Program Files\CMake\bin\cmake.exe" -E remove_directory logs && "C:\Program Files\CMake\bin\cmake.exe" -E remove_directory tmp"
+16:44:32 INFO:root:starting node 0
+16:44:33 No handlers could be found for logger "root"
+16:44:33 test_empty_vbuckets (view.viewmergetests.ViewMergingTests) ... ERROR
+16:44:33 
+16:44:33 ======================================================================
+16:44:33 
+ERROR: test_empty_vbuckets (view.viewmergetests.ViewMergingTests)
+16:44:33 ----------------------------------------------------------------------
+16:44:33 Traceback (most recent call last):
+16:44:33   File "pytests\view\viewmergetests.py", line 49, in setUp
+16:44:33     self.fail(ex)
+16:44:33 AssertionError: global name 'paramiko' is not defined
+16:44:33 
+16:44:33 ----------------------------------------------------------------------
+16:44:33 Ran 1 test in 0.003s
+16:44:33 
+16:44:33 FAILED (errors=1)
+16:44:33 No handlers could be found for logger "root"
+16:44:33 INFO:root:stopping node 0
+16:44:33 INFO:root:Stopping cluster_run with all sub processes
+16:44:33 SUCCESS: The process with PID 7720 (child process of PID 12464) has been terminated.
+16:44:33 SUCCESS: The process with PID 12464 (child process of PID 5816) has been terminated.
+16:44:33 SUCCESS: The process with PID 5816 (child process of PID 18828) has been terminated.
+16:44:33 filename: conf/view-conf/py-viewmerge.conf
+
+16:44:33 prefix: view.viewmergetests.ViewMergingTests
+
+
+
+
+
+.\testrunner -i b/resources/dev-single-node.ini makefile=True,log_level=DEBUG -t view.viewmergetests.ViewMergingTests.test_empty_vbuckets,first_case=true
+
+
+ERROR: test_view_ops (view.createdeleteview.CreateDeleteViewTests)
+------------------------------------------------------------------
+
+~/jenkins/workspace/couchdb-gerrit-views-pre-merge-master-master0/testrunner
+filename: conf/view-conf/py-view-pre-merge.conf
+prefix: view.viewquerytests.ViewQueryTests
+prefix: view.createdeleteview.CreateDeleteViewTests
+prefix: rebalance.rebalancein.RebalanceInTests
+Global Test input params:
+{'cluster_name': 'dev-single-node',
+ 'conf_file': 'conf/view-conf/py-view-pre-merge.conf',
+ 'ini': 'b/resources/dev-single-node.ini',
+ 'makefile': 'True',
+ 'num_nodes': 1,
+ 'spec': 'py-view-pre-merge'}
+
+ERROR: test_view_ops (view.createdeleteview.CreateDeleteViewTests)
+14:39:13 ----------------------------------------------------------------------
+14:39:13 Traceback (most recent call last):
+14:39:13   File "pytests/view/createdeleteview.py", line 37, in setUp
+14:39:13     self.fail(ex)
+14:39:13 AssertionError: unable to create bucket bucket0 on the host @ 127.0.0.1
+
+
+14:38:57 ./testrunner -i b/resources/dev-single-node.ini makefile=True -t view.createdeleteview.CreateDeleteViewTests.test_view_ops,ddoc_ops=update,test_with_view=True,num_ddocs=2,num_views_per_ddoc=3,items=2000,sasl_buckets=1,standard_buckets=1
+14:38:57 
+14:38:57 Test Input params:
+14:38:57 {'ddoc_ops': 'update', 'num_ddocs': '2', 'items': '2000', 'test_with_view': 'True', 'makefile': 'True', 'num_views_per_ddoc': '3', 'conf_file': 'conf/view-conf/py-view-pre-merge.conf', 'cluster_name': 'dev-single-node', 'standard_buckets': '1', 'ini': 'b/resources/dev-single-node.ini', 'case_number': 3, 'sasl_buckets': '1', 'num_nodes': 1, 'logs_folder': '/home/couchbase/jenkins/workspace/couchdb-gerrit-views-pre-merge-master-master0/testrunner/logs/testrunner-17-Nov-16_14-36-04/test_3', 'spec': 'py-view-pre-merge'}
+14:38:57 [2017-11-16 14:38:57,440] - [remote_util:232] INFO - connecting to 127.0.0.1 with username:Administrator password:asdasd ssh_key:
+14:38:57 [2017-11-16 14:38:57,440] - [remote_util:266] INFO - Connected to 127.0.0.1
+14:38:57 [2017-11-16 14:38:57,487] - [rest_client:1941] INFO - Node version in cluster 0.0.0-0000-community
+14:38:57 [2017-11-16 14:38:57,495] - [rest_client:1951] INFO - Node versions in cluster [u'0.0.0-0000-community']
+14:38:57 [2017-11-16 14:38:57,496] - [basetestcase:201] INFO - ==============  basetestcase setup was started for test #3 test_view_ops==============
+14:38:57 [2017-11-16 14:38:57,510] - [bucket_helper:142] INFO - deleting existing buckets [] on 127.0.0.1
+14:38:57 [2017-11-16 14:38:57,510] - [bucket_helper:168] INFO - sleep 2 seconds to make sure all buckets were deleted completely.
+14:38:59 [2017-11-16 14:38:59,528] - [basetestcase:482] INFO - sleep for 10 secs.  ...
+14:39:09 [2017-11-16 14:39:09,543] - [cluster_helper:78] INFO - waiting for ns_server @ 127.0.0.1:9000
+14:39:09 [2017-11-16 14:39:09,550] - [cluster_helper:80] INFO - ns_server @ 127.0.0.1:9000 is running
+14:39:09 [2017-11-16 14:39:09,550] - [basetestcase:245] INFO - initializing cluster
+14:39:10 [2017-11-16 14:39:10,461] - [task:125] INFO - server: ip:127.0.0.1 port:9000 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_0@127.0.0.1', 'uptime': u'182', 'mcdMemoryReserved': 6383, 'storageTotalRam': 7979, 'hostname': u'127.0.0.1:9000', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x7f5ceace82d0>], 'moxi': 12001, 'port': u'9000', 'version': u'0.0.0-0000-community', 'memcached': 12000, 'status': u'healthy', 'clusterCompatibility': 327681, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 7124111360, 'memoryTotal': 8366665728, 'memoryQuota': 4255, 'mcdMemoryAllocated': 6383, 'os': u'x86_64-unknown-linux-gnu', 'ports': []}
+14:39:10 [2017-11-16 14:39:10,461] - [rest_client:902] INFO - pools/default params : memoryQuota=4255
+14:39:10 [2017-11-16 14:39:10,465] - [rest_client:936] INFO - settings/indexes params : storageMode=plasma
+14:39:10 [2017-11-16 14:39:10,468] - [rest_client:803] ERROR - POST http://127.0.0.1:9000/settings/indexes body: storageMode=plasma headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"storageMode":"Storage mode can be set to 'plasma' only if the cluster is 5.0 enterprise edition."}} auth: Administrator:asdasd
+14:39:10 [2017-11-16 14:39:10,468] - [rest_client:821] INFO - settings/web params on 127.0.0.1:9000:username=Administrator&password=asdasd&port=9000
+14:39:10 [2017-11-16 14:39:10,602] - [rest_client:1951] INFO - Node versions in cluster [u'0.0.0-0000-community']
+14:39:10 [2017-11-16 14:39:10,602] - [basetestcase:2051] INFO - Atleast one of the nodes in the cluster is pre 5.0 version. Hence not creating rbac user for the cluster. RBAC is a 5.0 feature.
+14:39:10 [2017-11-16 14:39:10,602] - [basetestcase:269] INFO - done initializing cluster
+14:39:11 [2017-11-16 14:39:11,612] - [rest_client:1951] INFO - Node versions in cluster [u'0.0.0-0000-community']
+14:39:11 [2017-11-16 14:39:11,612] - [rest_client:2191] INFO - http://127.0.0.1:9000/pools/default/buckets with param: bucketType=membase&evictionPolicy=valueOnly&threadsNumber=3&ramQuotaMB=1418&proxyPort=11211&authType=sasl&name=default&flushEnabled=1&replicaNumber=1&replicaIndex=1&saslPassword=None
+14:39:11 [2017-11-16 14:39:11,618] - [rest_client:2216] INFO - 0.01 seconds to create bucket default
+14:39:11 [2017-11-16 14:39:11,619] - [bucket_helper:342] INFO - waiting for memcached bucket : default in 127.0.0.1 to accept set ops
+14:39:12 [2017-11-16 14:39:12,698] - [data_helper:295] INFO - creating direct client 127.0.0.1:12000 default
+14:39:12 [2017-11-16 14:39:12,720] - [data_helper:315] INFO - Atleast 1 of the server is on pre-spock version. Using the old ssl auth to connect to bucket.
+14:39:12 [2017-11-16 14:39:12,742] - [data_helper:295] INFO - creating direct client 127.0.0.1:12000 default
+14:39:12 [2017-11-16 14:39:12,765] - [data_helper:315] INFO - Atleast 1 of the server is on pre-spock version. Using the old ssl auth to connect to bucket.
+14:39:12 [2017-11-16 14:39:12,775] - [bucket_helper:293] INFO - Atleast 1 of the server is on pre-spock version. Using the old ssl auth to connect to bucket.
+14:39:12 [2017-11-16 14:39:12,782] - [task:312] INFO - bucket 'default' was created with per node RAM quota: 1418
+14:39:13 [2017-11-16 14:39:13,801] - [rest_client:1951] INFO - Node versions in cluster [u'0.0.0-0000-community']
+14:39:13 [2017-11-16 14:39:13,801] - [rest_client:2191] INFO - http://127.0.0.1:9000/pools/default/buckets with param: bucketType=membase&evictionPolicy=valueOnly&threadsNumber=3&ramQuotaMB=1418&proxyPort=11211&authType=sasl&name=bucket0&flushEnabled=1&replicaNumber=1&replicaIndex=1&saslPassword=password
+14:39:13 [2017-11-16 14:39:13,805] - [rest_client:803] ERROR - POST http://127.0.0.1:9000/pools/default/buckets body: bucketType=membase&evictionPolicy=valueOnly&threadsNumber=3&ramQuotaMB=1418&proxyPort=11211&authType=sasl&name=bucket0&flushEnabled=1&replicaNumber=1&replicaIndex=1&saslPassword=password headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"proxyPort":"port is already in use","replicaNumber":"Warning: you do not have enough data servers to support this number of replicas."},"summaries":{"ramSummary":{"total":4461690880,"otherBuckets":1486880768,"nodesCount":1,"perNodeMegs":1418,"thisAlloc":1486880768,"thisUsed":0,"free":1487929344},"hddSummary":{"total":47846916096,"otherData":33970637674,"otherBuckets":672754,"thisUsed":0,"free":13875605668}}} auth: Administrator:asdasd
+14:39:13 Traceback (most recent call last):
+14:39:13   File "pytests/basetestcase.py", line 342, in setUp
+14:39:13     self._bucket_creation()
+14:39:13   File "pytests/basetestcase.py", line 579, in _bucket_creation
+14:39:13     self._create_sasl_buckets(self.master, self.sasl_buckets)
+14:39:13   File "pytests/basetestcase.py", line 648, in _create_sasl_buckets
+14:39:13     task.result(self.wait_timeout * 10)
+14:39:13   File "lib/tasks/future.py", line 160, in result
+14:39:13     return self.__get_result()
+14:39:13   File "lib/tasks/future.py", line 112, in __get_result
+14:39:13     raise self._exception
+14:39:13 BucketCreationException: unable to create bucket bucket0 on the host @ 127.0.0.1
+14:39:13 [('/usr/lib/python2.7/threading.py', 774, '__bootstrap', 'self.__bootstrap_inner()'), ('/usr/lib/python2.7/threading.py', 801, '__bootstrap_inner', 'self.run()'), ('lib/tasks/taskmanager.py', 31, 'run', 'task.step(self)'), ('lib/tasks/task.py', 75, 'step', 'self.execute(task_manager)'), ('lib/tasks/task.py', 299, 'execute', 'self.set_exception(e)'), ('lib/tasks/future.py', 264, 'set_exception', 'print traceback.extract_stack()')]
+14:39:13 Thu Nov 16 14:39:13 2017
+14:39:13 [('/usr/lib/python2.7/threading.py', 774, '__bootstrap', 'self.__bootstrap_inner()'), ('/usr/lib/python2.7/threading.py', 801, '__bootstrap_inner', 'self.run()'), ('./testrunner.py', 297, 'run', '**self._Thread__kwargs)'), ('/usr/lib/python2.7/unittest/runner.py', 151, 'run', 'test(result)'), ('/usr/lib/python2.7/unittest/case.py', 393, '__call__', 'return self.run(*args, **kwds)'), ('/usr/lib/python2.7/unittest/case.py', 320, 'run', 'self.setUp()'), ('pytests/view/createdeleteview.py', 18, 'setUp', 'super(CreateDeleteViewTests, self).setUp()'), ('pytests/basetestcase.py', 342, 'setUp', 'self._bucket_creation()'), ('pytests/basetestcase.py', 579, '_bucket_creation', 'self._create_sasl_buckets(self.master, self.sasl_buckets)'), ('pytests/basetestcase.py', 648, '_create_sasl_buckets', 'task.result(self.wait_timeout * 10)'), ('lib/tasks/future.py', 160, 'result', 'return self.__get_result()'), ('lib/tasks/future.py', 111, '__get_result', 'print traceback.extract_stack()')]
+14:39:13 Cluster instance shutdown with force
+14:39:13 [2017-11-16 14:39:13,810] - [createdeleteview:36] ERROR - SETUP WAS FAILED. ALL TESTS WILL BE SKIPPED
+14:39:13 ERROR

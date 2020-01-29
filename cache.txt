@@ -1,0 +1,240 @@
+Marco's commit:
+http://review.couchbase.org/#/c/101645/
+
+Test:
+He pointed out that in terms of the test he’s running sharding the cache won’t help performance because the requests all come in under the same identity. I think this is an important enough real world use case that we should think about using some sort of approach that’s similar to Marco’s – perhaps something in line with the mru_cache we have inside ns_server.
+
+Aliaksey's Comments:
+
+1. “inUse” is not 100% trustworthy since it is set to zero in touch(). If two goroutines are working on the item at the same time, the first one through MoveToBack() / touch() will set inUse back to zero and if the second goroutine gets delayed trying to grab the mutex, the item could be evicted if there are lots of other goroutines accessing objects. So, it’s more of “inUse if 1 – but item could be in use even if this is 0”. In this instance I think Aliaksey’s preference would be to remove it entirely since as Golang is garbage collected, the item doesn’t get deallocated. Yes, items might get evicted but this will be rare and should amortize out to zero.
+
+2. Touch increments the cache’s current stamp. So – a burst of accesses against the same key (say hundreds) can result in the stamp increasing by hundreds and then the following hundreds of accesses will all end up grabbing the mutex and going through MoveToBack() / touch(), temporarily defeating the purpose of the way you’ve refactored the cache.
+
+3. Another item is the removal of the defers – which under a caught panic may leave the cache data structure in a broken (permanently locked) state.
+
+4. Also the integer wrap around is difficult to reason about and harder to test.
+
+5. The name -- it’s no longer an LRU.
+
+1. Some description of what the change does would be really useful.
+2. I don't know if you can call it an LRU cache anymore.
+3. It seems quite complicated for what it achieves. I'm pretty sure there are simpler ways to address your concerns.
+4. As a consequence of the complexity, there are surprises. For example, the cache actual size may grow beyond the configured size (because of the whole inUse thing). And it will never get back to normal.
+
+
+High Concurrency LRU Caching:
+https://www.openmymind.net/High-Concurrency-LRU-Caching/
+
+
+
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.02s)
+=== RUN   TestChaos
+--- PASS: TestChaos (9.32s)
+	cache_test.go:82: Hits: 100000000, Misses: 4907 Ratio: 20379
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	15.358s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.02s)
+=== RUN   TestChaos
+--- PASS: TestChaos (7.58s)
+	cache_test.go:82: Hits: 100000000, Misses: 6532 Ratio: 15309
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	13.611s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.00s)
+=== RUN   TestChaos
+--- PASS: TestChaos (6.51s)
+	cache_test.go:82: Hits: 100000000, Misses: 5069 Ratio: 19727
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	12.528s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.21s)
+=== RUN   TestChaos
+--- PASS: TestChaos (7.40s)
+	cache_test.go:82: Hits: 100000000, Misses: 4935 Ratio: 20263
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	13.627s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.21s)
+=== RUN   TestChaos
+--- PASS: TestChaos (7.50s)
+	cache_test.go:82: Hits: 100000000, Misses: 7442 Ratio: 13437
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	13.723s
+
+
+-------------------------------------------
+
+=== RUN   TestOneItem
+--- PASS: TestOneItem (26.13s)
+=== RUN   TestChaos
+--- PASS: TestChaos (60.83s)
+	cache_test.go:83: Hits: 100000000, Misses: 50000793 Ratio: 1
+PASS
+
+
+
+
+func TestEviction(t *testing.T) {
+	size := 250
+	values := size * 2
+
+	c := NewLRUCache(size)
+
+	c.Set(0, 0)
+	for i := 1; i < values; i++ {
+//		time.Sleep(100)
+		c.Set(i, i)
+		t.Logf("Set %d", i)
+		_, success := c.Get(0)
+		if !success {
+			t.Fatal("0 should not be evicted")
+		}
+	}
+	_, success := c.Get(1)
+	if success {
+		t.Fatal("1 should be evicted")
+	}
+	_, success = c.Get(size + 1)
+	if !success {
+		t.Fatal("size + 1 should not be evicted")
+	}
+}
+
+
+
+commit 65a91db72e6ef899af27a6dd90bffdcdada567a8
+Author: Aliaksey Artamonau <aliaksiej.artamonau@gmail.com>
+Date:   Fri Feb 17 21:11:04 2017 -0800
+
+    Purely ets based mru cache.
+    
+    Eviction strategy:
+    
+     - group all items in the cache into two sets: recent items and stale
+       items
+    
+     - when item is added or read, it always ends up in the "recent" set;
+       when item is updated, it stays in the set it's already in (if any)
+    
+     - if on adding new item to the "recent" set we reach max capacity and
+       have no stale items, we move all the items that were in the
+       "recent" set prior to the operation to the "stale" set; the item
+       that triggered this rearrangement is left in the "recent" set
+    
+     - all of this guarantees that whenever we need to evict, we always
+       have at least one item in the "stale" set
+    
+     - we pick the victim according to what ets:first returns; for hash
+       based ets tables it should be pretty random
+    
+    The benefits over the lru:
+    
+     - requires less book keeping at the expense of a little less
+       precision when a victim needs to be found for eviction
+    
+     - allows for more concurrency; access to recent items is independent
+       for each key; only when a stale item is accessed or a new one
+       added does a global housekeeping lock need to be acquired
+    
+     - flush is simpler
+    
+     - all ets tables used are hash tables
+    
+     - crash recovery is simpler (not implemented yet)
+    
+    Change-Id: Iecd606f3f42599b6c5cf355ea3634cfb1f9a4004
+    Reviewed-on: http://review.couchbase.org/73871
+    Tested-by: Aliaksey Artamonau <aliaksiej.artamonau@gmail.com>
+    Reviewed-by: Artem Stemkovski <artem@couchbase.com>
+
+------------------------------------------
+
+Existing cache
+
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (27.33s)
+=== RUN   TestChaos
+--- PASS: TestChaos (23.84s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	51.190s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (27.13s)
+=== RUN   TestChaos
+--- PASS: TestChaos (23.67s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	50.818s
+
+
+-------------------------------------------
+
+MB-31975 do not grab write lock on Get operation of cbauth cache
+
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (7.91s)
+=== RUN   TestChaos
+--- PASS: TestChaos (10.51s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	18.433s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (9.06s)
+=== RUN   TestChaos
+--- PASS: TestChaos (7.54s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	16.612s
+
+-------------------------------------------
+
+MB-31975 LRUCache rewritten not to grab write lock for read access
+
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.68s)
+=== RUN   TestChaos
+--- PASS: TestChaos (56.83s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	63.530s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.47s)
+=== RUN   TestChaos
+--- PASS: TestChaos (54.83s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	61.318s
+
+----------------------------------------------------------
+
+Marco:
+
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.36s)
+=== RUN   TestChaos
+--- PASS: TestChaos (6.15s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	12.523s
+Couchbases-MacBook-Pro-22:cbauthimpl artem$ go test -v
+=== RUN   TestOneItem
+--- PASS: TestOneItem (6.29s)
+=== RUN   TestChaos
+--- PASS: TestChaos (6.14s)
+	cache_test.go:103: Hits: 100000000, Misses: 0
+PASS
+ok  	github.com/couchbase/cbauth/cbauthimpl	12.439s

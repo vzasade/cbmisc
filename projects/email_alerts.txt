@@ -1,0 +1,55 @@
+   {email_alerts,
+    [{recipients,["root@localhost"]},
+     {sender,"couchbase@localhost"},
+     {enabled,false},
+     {email_server,
+      [{user,[]},
+       {pass,[]},
+       {host,"localhost"},
+       {port,25},
+       {encrypt,false}]},
+     {alerts,
+      [-auto_failover_node,
+       -auto_failover_maximum_reached,
+       -auto_failover_other_nodes_down,
+       -auto_failover_cluster_too_small,
+       -auto_failover_disabled,
+       ip,
+       disk,
+       overhead,
+       ep_oom_errors,
+       ep_item_commit_failed,
+       audit_dropped_events,
+       indexer_ram_max_usage,
+       ep_clock_cas_drift_threshold_exceeded,
+       communication_issue]}]},
+
+
+
+alert_key(ns_node_disco, 0005) -> server_down;
+alert_key(ns_node_disco, 0014) -> server_unresponsive;
+alert_key(ns_node_disco, 0004) -> server_up;
+alert_key(mc_pool, 0006)       -> bucket_auth_failed;
+alert_key(menelaus_web, Code) -> menelaus_web:alert_key(Code);
+alert_key(ns_cluster, Code) -> ns_cluster:alert_key(Code);
+alert_key(auto_failover, Code) -> auto_failover:alert_key(Code);
+alert_key(_Module, _Code) -> all.
+
+menelaus_web:
+alert_key(?BUCKET_CREATED)  -> bucket_created;
+alert_key(?BUCKET_DELETED)  -> bucket_deleted;
+alert_key(_) -> all.
+
+ns_cluster:
+alert_key(?NODE_JOINED) -> server_joined;
+alert_key(?NODE_EJECTED) -> server_left;
+alert_key(_) -> all.
+
+auto_failover:
+-spec alert_key(Code::integer()) -> atom().
+alert_key(?EVENT_NODE_AUTO_FAILOVERED) -> auto_failover_node;
+alert_key(?EVENT_MAX_REACHED) -> auto_failover_maximum_reached;
+alert_key(?EVENT_OTHER_NODES_DOWN) -> auto_failover_other_nodes_down;
+alert_key(?EVENT_CLUSTER_TOO_SMALL) -> auto_failover_cluster_too_small;
+alert_key(?EVENT_AUTO_FAILOVER_DISABLED) -> auto_failover_disabled;
+alert_key(_) -> all.

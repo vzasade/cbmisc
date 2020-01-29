@@ -1,0 +1,122 @@
+4.6 testing
+-----------
+
+default:
+telnet 127.0.0.1 12001
+get aa
+VALUE aa 0 25
+{
+  "bucket": "DEFAULT"
+}
+END
+
+unlocked:
+telnet 127.0.0.1 1234
+get aa
+VALUE aa 0 26
+{
+  "bucket": "unlocked"
+}
+END
+
+
+Info
+----
+
+Binary client: mc_bin_client.py
+client = MemcachedClient(server["ip"], moxi_port, timeout=timeout)
+from mc_bin_client import MemcachedClient, MemcachedError
+
+Moxi
+----
+cproxy_process_upstream_binary_nread - entry point for binary protocol
+cproxy_sasl_plain_auth - custom handler for sasl auth
+
+cproxy_auth_downstream - authentication with downstream
+   done on downstream_connect_init
+   done on cproxy_connect_downstream_conn
+   done on zstored_acquire_downstream_conn (connection pool)
+   done on cproxy_connect_downstream
+   done on cproxy_forward_a2a_downstream, cproxy_forward_a2b_downstream, cproxy_forward_b2b_downstream
+   done on cproxy_forward
+   done on cproxy_on_connect_downstream_conn, cproxy_release_downstream, cproxy_assign_downstream
+
+
+
+curl -v -X POST -u Administrator -p asdasd --data 'name=test&bucketType=membase&autoCompactionDefined=false&evictionPolicy=valueOnly&threadsNumber=3&replicaNumber=1&replicaIndex=0&conflictResolutionType=seqno&ramQuotaMB=100&flushEnabled=0&moxi_port=1234' http://127.0.0.1:9000/pools/default/buckets
+
+
+Spock:
+1. Dedicated moxi works with ascii and binary protocols
+
+
+(/Users/artem/work/spock/moxi/src/cproxy_protocol_b.c.441) <34 sasl auth failed for locked (6)
+
+
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/cproxy_protocol_b.c.121) <34 cproxy_process_upstream_binary_nread 89 0 7 7
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/cproxy.c.2263) 34: pause_upstream_for_downstream
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/memcached.c.692) 34: going from conn_nread to conn_pause
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/cproxy.c.2317) wait_queue_timeout started
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/cproxy.c.1815) assign_downstream
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/cproxy.c.892) cproxy_add_downstream 0 1024
+moxi<0.3980.0>: 2017-06-05 18:27:09: (/Users/artem/work/spock/moxi/src/memcached.c.1047) >34 Writing an error: 32 Auth failure
+
+
+curl -v -X PUT --data "password=&roles=data_reader[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/local/default
+
+
+Summary of moxi behaviour on Spock clusters:
+
+sasl_auth command
+-----------------
+sasl_auth command of binary protocol doesn't work via moxi anymore
+
+The reason is:
+1. Moxi doesn't authenticate with memcached with the provided password, instead it compares provided password to bucket's sasl_password known to moxi and if 2 passwords are equal grabs already authenticated connection from the corresponding pool
+2. In Spock sasl_passwords are generated and unknown to the user
+3. Changing this behavior of moxi seems to be non trivial and we would prefer to avoid doing this
+
+Default moxi:
+-------------
+
+1. Since sasl_auth doesn't work, access to password protected buckets via binary protocol cannot be supported
+2. Access to "default" bucket without auth will be allowed only if there's a passwordless "default" user
+3. Therefore default moxi will be started only if there's a "default" bucket with passwordless access
+3. Customers who used default moxi to access password protected buckets will have 2 options
+  a) upgrade to SDK
+  b) setup dedicated moxi for the bucket
+
+Dedicated moxi:
+---------------
+
+1. Dedicated moxi ports can be set up for any bucket via REST API
+2. UI and CLI do not allow to set up moxi ports anymore
+3. Dedicated moxies work the same ways as they did pre Spock, allowing passwordless access to the buckets via ascii and binary protocols
+4. Since setting up moxi port opens passwordless access to a protected bucket (security hole) warning should be displayed in UI indicating that port must be protected.
+5. We probably should consider to allow setting up moxi ports via CLI
+
+
+
+
+Here's the moxi story: when you do sasl_auth against moxi, it doesn't propagate the call to memcached. It simply matches provided password against buckets sasl_password, gains which the whole pool of downstream connections is authenticated.
+So sasl_auth command doesn't work on Spock moxi at all. That means that you cannot use binary moxi protocol agains default moxi to connect to any bucket.
+Though both binary and ascii protocols do work agains dedicated moxies providing nice security hole
+
+sasl_auth command needs password. moxi doesn't use this password to authenticate against memcached. it just compares it to sasl_password that is known to moxi. the passwords will never match because sasl_password is generated and unknown to the caller of sasl_auth command
+
+but of course they can upgrade their clients
+so they have 2 options
+(1) use dedicated (2) upgrade to SDK
+I think that's totally reasonable
+
+
+
+curl -v -X POST --data 'bucketType=membase&ramQuotaMB=100&name=default&evictionPolicy=valueOnly&authType=none&proxyPort=1223&replicaNumber=1&replicaIndex=0&threadsNumber=3&flushEnabled=0&autoCompactionDefined=false&conflictResolutionType=seqno' http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets
+
+
+curl -v -X POST --data 'bucketType=membase&ramQuotaMB=100&name=default&evictionPolicy=valueOnly&authType=none&proxyPort=1223&replicaNumber=1&replicaIndex=0&threadsNumber=3&flushEnabled=0&autoCompactionDefined=false&conflictResolutionType=seqno' http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/default?bucket_uuid=841a536607cba635cadf7d6676e5b859
+
+
+--------------------------------------------
+
+Removal:

@@ -1,0 +1,15 @@
+gocb:
+https://github.com/couchbase/gocb
+
+API:
+https://godoc.org/github.com/couchbase/gocb
+
+Doc:
+https://developer.couchbase.com/documentation/server/4.5/sdk/go/start-using-sdk.html
+
+gocbcore:
+https://github.com/couchbase/gocbcore
+
+Example of golang app:
+https://blog.couchbase.com/getting-started-with-golang-and-couchbase/
+https://blog.couchbase.com/deploy-golang-web-application-couchbase-docker-containers/

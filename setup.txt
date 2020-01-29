@@ -96,6 +96,8 @@ sudo easy_install pip
 
 tool to download from s3
 ------------------------
+http://hub.internal.couchbase.com/confluence/pages/viewpage.action?title=Downloading+Customer+Logs+Securely&spaceKey=supp
+
 https://github.com/couchbaselabs/s3dl
 sudo pip install git+https://github.com/couchbaselabs/s3dl.git --ignore-installed six
 

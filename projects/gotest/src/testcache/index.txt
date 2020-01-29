@@ -1,0 +1,69 @@
+curl -X POST -u Administrator:asdasd http://127.0.0.1:9000/settings/indexes -d "storageMode=memory_optimized"
+../install/bin/cbindex -auth=Administrator:asdasd -server 127.0.0.1:9000 -type create -bucket bucket1  -fields=alt_email -using memdb -index myindex
+
+../install/bin/cbindexperf -cluster 127.0.0.1:9000 -auth="Administrator:asdasd" -configfile /Users/artem/work/cbmisc/projects/gotest/src/testcache/test.json -resultfile result.json -statsfile statsfile
+
+
+
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2873_apply_scanworkload_377d&snapshot=nyx_500-2915_apply_scanworkload_14c9
+
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-101_apply_scanworkload_c89a&snapshot=nyx_500-2915_apply_scanworkload_14c9
+
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-101_build_secondaryindex_55fa&snapshot=nyx_500-2873_apply_scanworkload_377d
+
+----------------------------------
+
+Changelog:
+http://172.23.123.43:8000/getchangelog?rel=5.0.0&fromb=2893&tob=2894
+
+2893 #89
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2893_apply_scanworkload_9f62
+
+2894 #90
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2894_apply_scanworkload_427e
+
+Comparison:
+http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2893_apply_scanworkload_9f62&snapshot=nyx_500-2894_apply_scanworkload_427e
+
+
+--------------------------------------------
+
+2893
+----
+06:57:09 [29/May/2017 06:57:09] INFO - building secondary index..
+06:57:09 [29/May/2017 06:57:09] INFO - building secondary indexes
+06:57:09 [29/May/2017 06:57:09] INFO - Submitting cbindex command /opt/couchbase/bin/cbindex -auth=Administrator:password  -server 172.23.99.122:8091  -type create -bucket bucket-1  -fields=alt_email -using memdb -index myindex -with=\"{\\\"defer_build\\\":true}\"
+06:57:11 [29/May/2017 06:57:11] INFO - Command status Index created: 5799844231761426042 with "{\"defer_build\":true}"
+06:57:11 [29/May/2017 06:57:11] INFO - Submitting cbindex command /opt/couchbase/bin/cbindex -auth=Administrator:password -server 172.23.99.122:8091 -type build -indexes bucket-1:myindex
+06:57:11 [29/May/2017 06:57:11] INFO - Command status Index building for: [5799844231761426042]
+06:57:11 [29/May/2017 06:57:11] INFO - Waiting for the following indexes to be ready: ['myindex']
+06:57:28 [29/May/2017 06:57:28] INFO - Creating a new database: secondary_debugstats_indexnyx_500-2893_build_secondaryindex_75a8bucket-1myindex
+06:57:28 [29/May/2017 06:57:28] INFO - Creating a new database: ns_servernyx_500-2893_build_secondaryindex_75a8
+06:57:28 [29/May/2017 06:57:28] INFO - Creating a new database: ns_servernyx_500-2893_build_secondaryindex_75a8bucket-1
+06:57:29 [29/May/2017 06:57:29] INFO - Creating a new database: secondary_debugstats_bucketnyx_500-2893_build_secondaryindex_75a8bucket-1
+06:57:29 [29/May/2017 06:57:29] INFO - Creating a new database: secondary_debugstatsnyx_500-2893_build_secondaryindex_75a8
+06:57:30 [29/May/2017 06:57:30] INFO - Creating a new database: secondary_statsnyx_500-2893_build_secondaryindex_75a8bucket-1
+06:57:31 [29/May/2017 06:57:31] INFO - Creating a new database: active_tasksnyx_500-2893_build_secondaryindex_75a8
+06:57:38 [29/May/2017 06:57:38] INFO - Creating a new database: netnyx_500-2893_build_secondaryindex_75a81722399245
+06:57:38 [29/May/2017 06:57:38] INFO - secondary index build time: 27.32550048828125
+06:57:38 [29/May/2017 06:57:38] INFO - Terminating stats collectors
+06:57:38 [29/May/2017 06:57:38] INFO - Reconstructing measurements
+06:57:38 [29/May/2017 06:57:38] INFO - Adding snapshot: nyx_500-2893_build_secondaryindex_75a8
+06:57:38 [29/May/2017 06:57:38] INFO - http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2893_build_secondaryindex_75a8
+
+2894
+----
+06:14:08 [30/May/2017 06:14:08] INFO - building secondary index..
+06:14:08 [30/May/2017 06:14:08] INFO - building secondary indexes
+06:14:08 [30/May/2017 06:14:08] INFO - Submitting cbindex command /opt/couchbase/bin/cbindex -auth=Administrator:password  -server 172.23.99.122:8091  -type create -bucket bucket-1  -fields=alt_email -using memdb -index myindex -with=\"{\\\"defer_build\\\":true}\"
+06:14:09 [30/May/2017 06:14:09] INFO - Command status Index created: 9637673455950708298 with "{\"defer_build\":true}"
+06:14:09 [30/May/2017 06:14:09] INFO - Submitting cbindex command /opt/couchbase/bin/cbindex -auth=Administrator:password -server 172.23.99.122:8091 -type build -indexes bucket-1:myindex
+06:14:10 [30/May/2017 06:14:10] INFO - Command status Index building for: [9637673455950708298]
+06:14:10 [30/May/2017 06:14:10] INFO - Waiting for the following indexes to be ready: ['myindex']
+06:14:37 [30/May/2017 06:14:37] INFO - secondary index build time: 27.3510844707489
+06:14:37 [30/May/2017 06:14:37] INFO - Terminating stats collectors
+06:14:37 [30/May/2017 06:14:37] INFO - Reconstructing measurements
+06:14:37 [30/May/2017 06:14:37] INFO - Adding snapshot: nyx_500-2894_build_secondaryindex_9bb8
+06:14:37 [30/May/2017 06:14:37] INFO - http://cbmonitor.sc.couchbase.com/reports/html/?snapshot=nyx_500-2894_build_secondaryindex_9bb8
+
+

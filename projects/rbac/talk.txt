@@ -1,0 +1,110 @@
+RBAC most visible objects: Users and Roles
+
+Users
+-----
+
+Users currently can belong to 2 domains: local and external
+
+Local - users with passwords, ns_server is responsible for authenticating such users
+External - auth is done by external tool - LDAP
+
+We do allow creating local and external user with the same name. During the authentication stage we try to auth user as local first and if the auth fails, then we try to authenticate it as external.
+
+Each user can have multiple roles assigned. Roles define which permissions the user has. If at least one assigned role grants certain permission, the permission is granted to the user.
+
+There are also internal users (which nemas start from @) that are always local. They are not configured but coded. The purpose of such users - authentication between components.
+
+Permission
+----------
+
+Permission is a string mapped (in the component code) to the concrete functionality of the component, which serves as a key to RBAC. Whenever certain functionality is requested, the component will ask RBAC if certain permission is granted to currently authenticated user. If it is granted, the functionality will be performed, otherwise autorization failure (like 403 http code) will be returned.
+
+Permissions usually look like this:
+
+cluster.some.other.words!operation
+
+or like this:
+
+cluster.bucket[name].some.other.words!operation
+
+For example:
+
+cluster.bucket[default].xdcr!write - allows to modify xdcr configuration on bucket "default"
+cluster.admin.security!read - gives read access to security related stuff (like users)
+
+Erlang notation for permissions:
+
+For 2 examples above the erlang notation will be:
+{[{bucket, "default"}, xdcr], write}
+{{[admin, security], read}
+
+Note that 'cluster' is ommited
+
+How the functionality is mapped to permissions is totally outside of RBAC area and totally on the discretion of components.
+
+Rough map between ns_server REST API's and permissions:
+http://src.couchbase.org/source/xref/trunk/ns_server/src/menelaus_web.erl#215
+
+Roles
+-----
+
+As somewhat misleadingly stated in documentation roles are sets of permissions. They do represent sets of permisions (though infinite sets) but not configured as such.
+
+Roles are configures as lists of permission patterns (or filters).
+
+Pre spock roles:
+http://src.couchbase.org/source/xref/trunk/ns_server/src/menelaus_roles.erl#66
+
+Spock roles:
+http://src.couchbase.org/source/xref/trunk/ns_server/src/menelaus_roles.erl#127
+
+It is not possible to list all permissions granted by the role, though it is always possible to tell if certain permission is granted by the role.
+
+Forbidden response:
+-------------------
+
+curl -u test:asdasd http://127.0.0.1:9000/_metakv
+
+403
+{"message":"Forbidden. User needs one of the following permissions","permissions":["cluster.admin.internal!all"]}
+
+http_access.log:
+127.0.0.1 - test [04/Sep/2017:00:39:47 -0700] "GET /_metakv HTTP/1.1" 403 113 - curl/7.43.0
+
+debug.log:
+[ns_server:debug,2017-09-04T00:39:47.540-07:00,n_0@127.0.0.1:<0.3581.0>:menelaus_auth:check_permission:345]Access denied.
+Identity: {"test",local}
+Roles: [[{[{bucket,any},password],none},
+         {[{bucket,any},data],none},
+         {[admin,security],[read]},
+         {[admin],none},
+         {[],[read,list]}]]
+Permission: {[admin,internal],all}
+
+Logs
+----
+http_access.log
+http_access_internal.log
+
+Memcached RBAC files:
+---------------------
+
+Authentication info. Hashes for PLAIN and SCRAM-SHA auth:
+isasl.pw
+
+RBAC info. Mapping between users and memcached related privileges:
+config/memcached.rbac
+
+Mapping between RBAC and memcached privileges:
+http://src.couchbase.org/source/xref/trunk/ns_server/src/memcached_permissions.erl#38
+
+CBAUTH:
+-------
+
+REST API's:
+
+Authentication:
+POST /_cbauth
+
+Authorization:
+GET /_cbauth/checkPermission

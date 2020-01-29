@@ -1,0 +1,195 @@
+            DirStr = "/tmp",
+            Dirs = [filename:join(Token, "@analytics") || Token <- string:tokens(Str, ",")],
+
+"-dataDirs=" ++ string:join(Dirs, ","),
+
+
+cluster_connect
+cluster_run
+include/ns_common.hrl
+src/auto_failover_logic.erl
+src/bucket_info_cache.erl
+src/ns_cluster_membership.erl
+src/ns_ports_setup.erl
+
+cbcollect_info
+deps/ns_couchdb/src/cb_config_couch_sync.erl
+deps/ns_couchdb/src/ns_couchdb_api.erl
+changed
+include/service_api.hrl
+changed
+priv/public/ui/EE_subscription_license_agreement.txt
+changed
+priv/public/ui/app-classic/components/mn_filters.js
+changed
+priv/public/ui/app-classic/mn_wizard/step1/mn_wizard_step1_controller.js
+changed
+priv/public/ui/app-classic/mn_wizard/step1/mn_wizard_step1_service.js
+changed
+priv/public/ui/app/components/directives/mn_memory_quota/mn_memory_quota.html
+changed
+priv/public/ui/app/components/directives/mn_memory_quota/mn_memory_quota_service.jsns_
+changed
+priv/public/ui/app/components/directives/mn_services/mn_services.html
+changed
+priv/public/ui/app/components/mn_filters.js
+changed
+priv/public/ui/app/mn_admin/mn_admin_controller.js
+changed
+priv/public/ui/app/mn_admin/mn_overview/mn_overview.html
+changed
+priv/public/ui/app/mn_admin/mn_overview/mn_overview_service.js
+changed
+priv/public/ui/app/mn_admin/mn_servers/add_dialog/mn_servers_add_dialog_controller.js
+changed
+priv/public/ui/app/mn_admin/mn_servers/eject_dialog/mn_servers_eject_dialog.html
+changed
+priv/public/ui/app/mn_admin/mn_servers/list/item/mn_servers_list_item_controller.js
+changed
+priv/public/ui/app/mn_admin/mn_servers/memory_quota_dialog/memory_quota_dialog.html
+changed
+priv/public/ui/app/mn_admin/mn_settings/cluster/mn_settings_cluster_controller.js
+changed
+priv/public/ui/app/mn_admin/mn_settings/cluster/mn_settings_cluster_service.js
+changed
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration.html
+changed
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration_controller.js
+changed
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration_service.js
+changed
+priv/public/ui/app/mn_wizard/mn_join_cluster/mn_join_cluster.html
+changed
+priv/public/ui/app/mn_wizard/mn_terms_and_conditions/mn_terms_and_conditions_controller.js
+changed
+scripts/dump-guts
+changed
+src/cbas_rest.erl
+changed
+src/diag_handler.erl
+changed
+src/index_stats_collector.erl
+changed
+src/index_stats_sup.erl
+changed
+src/index_status_keeper_sup.erl
+created
+src/indexer_cbas.erl
+changed
+src/indexer_fts.erl
+changed
+src/indexer_gsi.erl
+changed
+src/menelaus_pluggable_ui.erl
+changed
+src/menelaus_roles.erl
+changed
+src/menelaus_stats.erl
+changed
+src/menelaus_web.erl
+changed
+src/menelaus_web_cluster.erl
+changed
+src/menelaus_web_node.erl
+changed
+src/menelaus_web_pools.erl
+changed
+src/misc.erl
+changed
+src/ns_audit.erl
+changed
+src/ns_cluster.erl
+changed
+src/ns_config_default.erl
+changed
+src/ns_orchestrator.erl
+changed
+src/ns_rebalancer.erl
+changed
+src/ns_server_nodes_sup.erl
+changed
+src/ns_storage_conf.erl
+changed
+src/service_api.erl
+
+
+
+directories:
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration.html
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration_controller.js
+priv/public/ui/app/mn_wizard/mn_cluster_configuration/mn_cluster_configuration_service.js
+priv/public/ui/app/mn_wizard/mn_join_cluster/mn_join_cluster.html
+
+atLeast51
+
+
+repo sync
+make clean
+make
+make analytics-install
+
+Memory, Max, Min, Quota
+{kv,13925,12901,256,8355}
+{cbas,5570,4546,1024,3342}
+{fts,2228,1204,256,445}
+
+
+certify_client_key_exchange
+ssl_connection:certify(#client_key_exchange{}
+tls_connection:certify(#client_key_exchange{}
+
+
+
+new_server_hello
+  server_certify_and_key_exchange
+     +certify_server
+     +key_exchange
+     +request_client_cert
+  +server_hello_done
+
+resumed_server_hello
+  finalize_handshake
+     cipher_protocol
+     next_protocol
+     finished
+
+./lib/ssl/src/ssl_config.erl:25:-include("ssl_connection.hrl").
+./lib/ssl/src/ssl_connection.erl:29:-include("ssl_connection.hrl").
+
+
+./configure --prefix=/Users/artem/work/erl16/install --enable-darwin-64bit  --disable-hipe
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/settings/clientCertAuth -d @- << EOF
+{
+    "state": "enable",
+    "prefixes": [
+      {
+        "path": "san.uri",
+        "prefix": "www.cb-",
+        "delimiter": ".,;"
+      },
+      {
+        "path": "san.email",
+        "prefix": "a",
+        "delimiter": "@"
+      }
+    ]
+}
+EOF
+
+http://127.0.0.1:9000/node/controller/setupServices
+services:kv,index,fts,n1ql,eventing,cbas
+setDefaultMemQuotas:true
+
+menelaus_web_cluster:handle_setup_services_post/
+
+Quotas = ns_storage_conf:default_quotas(Services)
+
+ns_storage_conf:set_quotas(ns_config:get(), Quotas)
+
+ns_storage_conf:check_this_node_quotas(Services, Quotas)
+
+
+BLAH Mem {14675898368,12287336448,{<0.7.0>,744008}}
+BLAH Q1 [{fts,336},{index,2520},{cbas,4898},{kv,4898}]
+LAH Check {12972,12652,{14675898368,12287336448,{<0.7.0>,744008}}}

@@ -1,0 +1,64 @@
+doc_replicator
+--------------
+%% @doc process responsible for pushing document changes to other nodes
+
+receives:
+{replicate_change, Doc} - replicates Doc to all nodes
+{replicate_newnodes_docs, Docs} - replicates docs to all new nodes
+
+sends:
+replicate_newnodes_docs - request for node to replicate all documents to new nodes
+{replicated_update, Doc} - send document to node
+
+doc_replication_srv
+-------------------
+%% @doc entry point for document replicators from other nodes. resides
+%%      on ns_server nodes, accepts pushed document changes from document
+%%      replicators from other nodes and forwards them to the document
+%%      manager that runs on ns_couchdb node
+
+proxies everyting to doc_manager on couchdb node
+
+
+------------------------------------------------
+
+rep manager: xdc_rep_manager
+
+receives:
+{rep_db_update, Doc}
+
+
+
+capi_ddoc_manager
+-----------------
+
+receives:
+{replicated_update, Doc} -
+    1. finds the doc by Id
+    2. writes if the do is not found or Rev > ExistingRev
+
+
+replicate_newnodes_docs
+    sends all local docs to doc replicator
+
+
+--------------------------------------------------------
+
+{ok,D1} = dets:open_file(sample_dets_file, [{type, set},{auto_save,3}]).
+
+
+[dets:insert(D1,{{fid,X},U}) || X <- lists:seq(1,10000)].
+
+[dets:insert(D1,{{fid,X},U}) || X <- lists:seq(1,300000)].
+[dets:delete(D1,{fid,X}) || X <- lists:seq(1,100000)].
+
+{ok,D1} = dets:open_file(sample_dets_file, [{type, set},{auto_save,3},{repair, force}]).
+{repair, Value}
+
+
+compaction once in 1000 opers
+remove orphans during compaction
+reject new updates if the queue is too big (> 1000)
+store user def and auth in different keys
+
+

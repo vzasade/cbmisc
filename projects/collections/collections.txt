@@ -1,0 +1,907 @@
+Main epic: MB-16181 Add Collection Support in Couchbase Server
+
+PRD:
+https://docs.google.com/document/d/1oj5j6mKKmcLniR5oN7rGKdF2c_rcE24zGabE3NhqQN0/edit#heading=h.4qpcz0x1uahb
+
+Show and Tell slides – pretty good for a quick introduction
+https://docs.google.com/presentation/d/1yzOKfxD5nqO6qhin_RZswCMX-ys1pPoJ7qqruTio2go
+
+Jim’s list of useful links for collections:
+https://hub.internal.couchbase.com/confluence/display/cbeng/Collections
+
+Design doc
+https://docs.google.com/document/d/1X-v8GWQjplrMMaYwwWOzEuP4AUoDNIAvS39NmEjQ3_E
+
+Requirements doc
+https://docs.google.com/document/d/1oj5j6mKKmcLniR5oN7rGKdF2c_rcE24zGabE3NhqQN0
+
+Show & Tell demo recording: (skip to 1:09 or so)
+https://drive.google.com/file/d/0BxjMHigDBKCMaFpRdGlEdXdTX2M/view
+
+
+Enabling collection prototype:
+{node, N, memcached_config_extra}
+{collections_prototype, true}
+
+ns_bucket:update_bucket_props
+[{extra_config_string, \"collections_prototype_enabled=true\"}]
+
+???
+Should collections be enabled on mixed clusters? I think NO!
+Buckets should be configured to enable collections.
+
+
+{xattr_enabled, {memcached_config_mgr, is_enabled, [?SPOCK_VERSION_NUM]}}
+
+
+collections manifest
+--------------------
+
+memcached is informed:
+1. Each time a bucket is created and before traffic is enabled (including after restarts of memcached).
+2. Each time the manifest changes.
+
+{“separator” : “<separator string>”
+“collections” : [<array of collection entries]}
+
+collection entry:
+{“name” : “collection name”, “uid” : ”uid value”}
+
+PROTOCOL_BINARY_CMD_COLLECTIONS_SET_MANIFEST = 0xB9
+RBAC = admin (collections admin is to be proposed)
+
+New GET_COLLECTIONS
+PROTOCOL_BINARY_CMD_GET_COLLECTION_CONFIG = 0xTBD
+RBAC = public
+
+Returns the current JSON manifest for the selected bucket (it may differ from what is seen on the REST API):
+
+questions:
+----------
+1. Changing collections during rebalance
+2. Can collections 'couch' and 'couchbase' coexist?
+3. /docs api doesn't work correctly: fails with einval if there's no $default, doesn't return docs otherwise
+4. Should $default always have id=0 ?
+5. Should user be able to recreate deleted $default collection
+
+
+client
+------
+https://github.com/couchbase/couchbase-python-client
+
+ENABLE
+curl -v -X POST -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections/enable
+
+GET
+curl -v -X GET -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections
+
+ADD
+curl -v -X POST -u Administrator:asdasd --data="name=aa" http://127.0.0.1:9000/pools/default/buckets/test/collections
+
+DELETE
+curl -v -X DELETE -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections/aa
+
+curl -v -X DELETE -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections/%24default
+
+
+
+
+
+
+http://review.couchbase.org/85905 WIP: enable collections on Vulcan clusters
+http://review.couchbase.org/85906 WIP: methods for manipulating collections and their support via
+http://review.couchbase.org/85907 WIP: rest api's for collections
+http://review.couchbase.org/85908 WIP: wrapper for CMD_COLLECTIONS_SET_MANIFEST
+http://review.couchbase.org/85909 WIP: enable collections for bucket depending on collections prop
+http://review.couchbase.org/85910 WIP: apply collections manifest to bucket when bucket is started or
+http://review.couchbase.org/85911 WIP: invalidate collections every time when some vbuckets become active
+
+
+Hey Artem,
+
+A little better, but I still found a gap, but not sure how much effort we should put in here? What happened this time was that
+one node correctly received the enablement followed by a collection_create (new manifest), it then replicated the create to
+the second node who hadn’t yet enabled collections, so again hit some issues. My assumption is the enable and set_manifest
+aren’t globally interlocked?
+
+This collection ‘enable’ stuff is really just to temporarily guard shipping code from doing some collection stuff we don’t yet want enabled
+in the wild. So unless there’s a quick fix, maybe we can live with having to test collection by doing the REST enable and polling all nodes 
+(mcstat settings | grep collection) before changing the manifest.
+
+What do you think?
+
+
+json(BucketCfg) ->
+    Props = get_manifest(BucketCfg),
+    {[{separator, list_to_binary(get_separator(Props))},
+      {uid, get_uid(Props)},
+      {collections, jsonify_collections(get_collections(Props))}]}.
+
+jsonify_collections(Collections) ->
+    [{[{name, list_to_binary(Name)}, {uid, Uid}]} ||
+        {Name, Uid} <- Collections].
+
+
+http://127.0.0.1:9000/pools/default/buckets/test/docs?skip=0&include_docs=false&limit=10
+http://127.0.0.1:9000/pools/default/buckets/test/docs/aa
+
+http://127.0.0.1:9000/pools/default/buckets/test/docs?skip=0&include_docs=false&limit=10
+{"rows":[{"id":"aa"}]}
+
+curl -v -X GET -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/docs/aa
+{"meta":{"id":"aa","rev":"1-151e12ccc72400000000000002000006","expiration":0,"flags":33554438},"json":"{\n\"click\": \"to edit\",\n\"with JSON\": \"there are no reserved field names\"\n}","xattrs":{}}
+
+
+
+
+
+"failpartialwarmup=false;backend=rocksdb;max_size=636485632;dbname=/Users/artem/work/vulcan/ns_server/data/n_0/data/test;backend=couchdb;couch_bucket=test;max_vbuckets=1024;alog_path=/Users/artem/work/vulcan/ns_server/data/n_0/data/test/access.log;data_traffic_enabled=false;max_num_workers=3;uuid=57df3570f4a8cf9e449ce6d20ff9407c;conflict_resolution_type=seqno;bucket_type=persistent;item_eviction_policy=value_only;max_ttl=0;ht_locks=47;compression_mode=passive;collections_prototype_enabled=true"
+
+
+
+
+curl -v -X POST -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections/enable
+
+http://127.0.0.1:9000/pools/default/buckets/test/docs?skip=0&include_docs=false&limit=10
+{"rows":[{"id":"aa"}]}
+
+curl -v -X GET -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/docs/aa
+
+curl -v -X POST -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/collections -d 'name=coll'
+
+curl -v -X GET -u Administrator:asdasd http://127.0.0.1:9000/pools/default/buckets/test/docs?skip=0&include_docs=false&limit=10
+{"rows":[{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"\u0002$collections:coll"},{"id":"aa"}]}
+
+
+ns_memcached:get_keys(
+mc_binary:get_keys
+?CMD_GET_KEYS
+
+-------------------------------------------------------------------------
+
+Outstanding query with ns_server regarding montonic UID and potential use of VARINT encoding
+
+how we isolate system collections? RBAC? Will system collections other than _default appear in madhatter?
+
+Is there reason why CID of _default is always 0?
+
+Should we be able to recreate default collection?
+
+Manifest UID
+
+The manifest UID is monotonically incremented for each collection manifest update.
+The manifest UID is fundamentally a 64-bit unsigned integer.
+
+upper limit on the number of collections per bucket will be 1000.
+
+Clients And Eventually Consistent Collections????
+
+How to get manifest UID from kv engine? - Polling on GET_MANIFEST...UID command that will be provided
+
+Upgrade:
+
+In the final version there will be no need to enable collections either on the kv engine or on the buckets
+For now need to enable collections prototype
+
+Need to HELO collections on all connections on fully madhatter clusters
+The data will be automatically stored in collections aware format on madhatter nodes of mixed clusters (no need to HELO for that)
+
+Offline upgrade is done using cbupgrade tool
+Overall the upgrade scenario resembles xattr upgrade
+
+-------------------------------------------------------
+
+You are probably wondering what I mean by “design approach” doc. The idea is that:
+
+It’s high level
+It’s sufficient to figure out the dependencies on other teams
+It’s sufficient to be able to come up with an initial guess of how long it will take
+ 
+
+There’s no template, no required sections.
+
+ 
+
+What I think you should write is a “high-level sketch” of how ns_server will support collections. I’m thinking it should include:
+
+The basic REST APIs (create, drop for schema & collections). Should talk about how clients get synchronous behavior (waiting until the collection is created) if they want it.
+The interaction between ns_server and memcached. I think largely this is a matter of writing up how you and Jim do this now. It might be sufficient to just refer to the manifest section of Jim's doc. Should cover things like collection creation, deletion, schema creation and deletion, and promotion of replicas after failover.
+RBAC – again just a “high level sketch” talking about how and what you plan to support for collections and schemas.
+ 
+
+I do understand that you’ll need to talk to Aliaksey on the design. Let’s try and make that happen when you get back. (Are you back next Monday?)
+
+-------------------------------------------------------
+
+The collection UID is currently specced out to be 32-bit (changed from a previous 64-bit). The manifest UID can still be 64-bit. 
+
+KV also thinking if the collection UID could be a monotonic u32 (incremented for every collection create), if so, we could use varint encoding in the memcache protocol to save a bit of space.
+
+There are also requirements that the collection UID doesn't collide with a live collection or one that was recently dropped (and KV is still purging it), KV will error set manifest on a per node basis if a collision occurs, of course if 1 node succeeds, the other fails some error handling is needed (rollback or keep trying the failed node).
+
+
+
+---------------------------------------------------------
+
+?MC_FEATURE_XATTR
+
+dcp_commands:negotiate_xattr
+dcp_proxy:negotiate_features
+
+dcp_sup:get_replication_features - where it is decided what features to HELO on replication connection
+
+also see:
+dcp_commands:open_connection
+
+only 2 examples of negotiate_xattr usage:
+ns_memcached:get_xattrs
+ns_memcached:subdoc_multi_lookup
+see: http://review.couchbase.org/89472
+
+----------------------------------------------------------------
+
+Couchbases-MacBook-Pro-22:ns_server artem$ ../voltron/server-overlay/bin/install/cbupgrade -h
+
+Usage: cbupgrade [-c path/to/previous/config/dir] [-a AUTO] [-d FILENAME] [-n] [-s FACTOR]
+
+  -c <path/to/previous/config/dir>
+       -- example: -c /opt/couchbase/var/lib/couchbase/config
+
+  -a <yes|no>
+       -- automatic or non-interactive mode; default is 'no';
+          'yes' to force automatic 'yes' answers to all questions
+
+  -d <dbdir_output_file>
+       -- retrieve db directory from config file and exit
+
+  -n   -- dry-run; don't actually change anything
+
+  -s <free_disk_space_needed_factor>
+       -- free disk space needed, as a factor of current bucket usage
+       -- default value is 2.0
+       -- example: -s 1.0
+
+
+------------------------------------------------------------------------
+
+Currently some parts of KV engine are guarded by collections config switches (as collection code has existed in a number of releases
+we made sure bits of it which would break the world are locked out).
+memcached has a settings flag which is used to force DCP replica streams into collections mode (so collections replicate)
+Each bucket has a “collections_prototype” flag which is used to protect some code from doing collections things, like storing the collection-ID on disk
+For collections full-cluster dev either patches from ns_server are needed or some diag/eval is needed so that collections can be fully tested 
+
+The main issue of enabling collections is that it breaks offline upgrade
+
+I have 4 steps which will allow offline upgrade to work, online upgrade is mentioned after the steps.
+
+Force KV-engine to enable collections (initially just switch collections_prototype to default as true, we could remove the guards overtime)
+no patch is yet available for this, it’s a simple change initially.
+Add the following patch (http://review.couchbase.org/#/c/97926/) to KV which introduces an upgrade tool, the tool ensures all existing docs are added to the default collection.
+Add the following patch (http://review.couchbase.org/#/c/97928/) to KV which means warmup expects to see persisted data in ‘collection’ form.
+Add the following patch (https://github.com/jimwwalker/voltron/commit/36aa8e9496fd9c61cb14f37c8f645380724fb585) to voltron cbupgrade which means a real offline couchbase upgrade runs the upgrade tool from step 2.
+
+At step 4 an offline upgrade from pre-master (6.5) works (tested locally with centos6 from 5.1 to self built rpm).
+
+At step 4 an online upgrade is expected (I need to test this) to work. This is because by design, if the replication DCP streams are not created with HELLO(collections) all replicated data goes to the default collection. Thus as we swap/upgrade/rebalance, data moved into the new node becomes part of the default collection, which is what we want in this scenario.
+
+At step 4 though, collections are still not very usable, this is because without a HELLO(collections) from ns_server on the DCP connections, collections
+cannot be properly managed, there is no way to replicate the collection events and the collection-ID of replicated documents. 
+
+At step 4 though, even with the inability to manage collections, we are now testing out our backwards compatibility in that all tests should still work because
+they are being forced to work against the default collection and we are reading/writing documents from network to disk with all collection code enabled.
+
+The next challenge is to safely enable the management of collections, this requires a plan with ns_server so we can remove the memcached settings flag
+and expect that ns_server will HELLO(collections) on DCP connections for those connections with a mad-hatter node at both ends.
+
+Regarding this, we should replicate what happened with xattrs, once all nodes are mad-hatter, restart DCP connections with HELLO(collections), than
+we can handle collection management (manually via set_manifest, or via the REST API from Artem’s prototype)
+
+My plan is to move my linked patches into review so that we can be ready to enact the plan, comments and thoughts?
+
+
+----------------------------------------------
+
+http://review.couchbase.org/85905/
+http://review.couchbase.org/85909/
+http://review.couchbase.org/98025/
+
+dot is an allowed cheracter in bucket name, so we cannot use it as a delimeter in a parameter name like bucket.schema.collection
+but we can do that bucket:schema:collection
+
+------------------------------------------------------------
+
+Should we add collections to the bucket capabilities?
+http://src.couchbase.org/source/xref/mad-hatter/ns_server/src/menelaus_web_buckets.erl#406
+
+Ajit: I had added "snappy" to the list, but it broke the SDKs... so i had reverted my change... the SDK folks have fixed the issue on there side... so if needed we can add "collections" to this list too
+
+yes, it's mostly for SDKs... I think they use this information to send in their HELO commands with appropriate features enabled
+
+-------------------------------------------------------------
+
+1. Basic REST API's:
+Roughly what is already described in Jim's document, though the url's will be slightly different. I'm still working on defining what they should be.
+
+2. Achieveing monotonically increasing UID's:
+Per latest Jim's document memcached requires monotonically increasing UID's for manifest and collections. To achieve this all the actions that result in producing new manifest will be performed as leader activities that require a quorum of majority of live nodes.
+
+3. Synchronous behavior:
+All REST API's that modify the collections manifest will return UID of the resulting manifest. ns_server will introduce REST API that will:
+  - accept manifest UID, and timeout as parameters
+  - wait until manifest UID will be applied on all kv nodes, or timeout expires
+  - waiting will be implemented via polling memcached on all requested nodes
+
+This way if somebody will want to do bulk creation of collections, he'll be able to execute multiple create collection calls and wait for latest manifest UID just once.
+
+4. interaction between ns_server and memcached:
+ns_server will asynchronously apply new manifest to kv engine in the following situations:
+  - manifest UID had changed
+  - after each vbucket takeover, to make sure that new master vbucket will receive latest manifest ASAP. this covers the failover scenario when manifest on replica vbucket might be behind. In this case it is possible that manifest UID temporary goes backwards, but eventually the latest manifest UID will be applied. memcached promises to handle such situation correctly.
+
+5. 
+
+
+situation:
+1. node A gets manifest 3
+2. applies it to memcached
+3. memcached replicates manifest 3 to replicas
+4. node A dies without replicating 3 via ns_config
+
+---------------------
+
+123Attiscrap
+
+bucket
+
+bucket._default
+bucket.
+
+bucket.scope
+bucket.scope
+
+bucket._default._default
+bucket..
+
+bucket._default.coll
+bucket..coll
+
+
+-------------------------------------------
+
+[{uid, Uid},
+  {last_scope_uid, _},
+  {last_coll_uid, _},
+  {scopes, [
+    {name, Name},
+    {uid, Uid},
+    {collections, [
+      {name, Name},
+      {uid, Uid}
+
+
+Initial:
+[{uid, 0},
+  {last_scope_uid, 0},
+  {last_coll_uid, 0},
+  {scopes, [
+    {name, "_default"},
+    {uid, 0},
+    {collections, [
+      {name, "_default"},
+      {uid, 0}]}]}]
+
+
+ns_orchestrator_sup
+
+model it on auto_failover or auto_reprovision
+
+waits till all config change notifications are processed by
+%% ns_config_events
+ns_config:sync_announcements()
+
+%% push outstanding changes to other nodes and make sure that they merged the
+%% changes in
+ns_config_rep:ensure_config_seen_by_nodes() ->
+
+
+pull_config() ->
+    OtherNodes = ns_node_disco:nodes_actual_other(),
+    ?log_debug("Attempting to pull config from nodes:~n~p", [OtherNodes]),
+
+    Timeout = ?get_timeout(pull_config, 5000),
+    case ns_config_rep:pull_remotes(OtherNodes, Timeout) of
+        ok ->
+            ?log_debug("Pulled config successfully.");
+        Error ->
+            ?log_warning("Failed to pull "
+                         "config from some nodes: ~p. Continuing anyway.",
+                         [Error])
+    end.
+
+cleanup_membase_bucket(Bucket, Options, BucketConfig, FullConfig) ->
+    {ok, RV} =
+        leader_activities:run_activity(
+          {ns_janitor, Bucket, cleanup}, majority,
+          fun () ->
+                  {ok, cleanup_with_membase_bucket_check_servers(Bucket,
+                                                                 Options,
+                                                                 BucketConfig,
+                                                                 FullConfig)}
+          end,
+          [quiet]),
+
+    RV.
+
+{leader_activities_error, {Domain, Name}, Error}.
+
+
+manifest should contain following properties: uid and next_uid
+
+algorithm:
+
+start majority leader activity
+pull config from available nodes (ns_config_rep:pull_remotes(ns_node_disco:nodes_actual_other(), Timeout))
+set next_uid = next_uid + 1
+ensure that config is seen by available nodes (ns_config_rep:ensure_config_seen_by_nodes())
+modify collection manifest and set uid = next_uid
+end majority leader activity
+
+[{uid, Uid},
+  {next_uid, _},
+  {next_scope_uid, _},
+  {next_coll_uid, _},
+  {scopes, [
+    {name, Name},
+    {uid, Uid},
+    {collections, [
+      {name, Name},
+      {uid, Uid}
+
+
+Initial:
+[{uid, 0},
+  {last_scope_uid, 0},
+  {last_coll_uid, 0},
+  {scopes, [
+    {name, "_default"},
+    {uid, 0},
+    {collections, [
+      {name, "_default"},
+      {uid, 0}]}]}]
+
+
+
+work_queue:start_singleton(collections).
+
+misc:start_singleton(gen_server, collections, InitFun, []).
+
+gen_server:start_link({via, leader_registry, collections}, collections, InitFun, [])
+
+
+REST:
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/collections
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/collections -d "name=test"
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/collections -d "name=test;scope=s"
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/scopes -d "name=s"
+
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/scopes -d "name="
+
+
+
+
+
+get manifest:
+GET /pools/default/buckets/<bucket>/collections
+
+add scope
+POST /pools/default/buckets/<bucket>/scopes
+name=<scope_name>
+
+add collection
+POST /pools/default/buckets/<bucket>/collections
+name=<coll_name>
+scope=<scope_name> (optional, default = "_default")
+
+delete scope
+DELETE /pools/default/buckets/<bucket>/scopes/<scope_name>
+
+delete collection
+DELETE /pools/default/buckets/<bucket>/collections/<coll_name>
+DELETE /pools/default/buckets/<bucket>/collections/<scope_name>/<coll_name>
+
+
+------------------------------------
+
+get manifest:
+GET /pools/default/buckets/<bucket>/collections
+
+add scope
+POST /pools/default/buckets/<bucket>/collections
+name=<scope_name>
+
+add collection
+POST /pools/default/buckets/<bucket>/collections/<scope_name>
+name=<collection_name>
+
+edit collection
+PUT /pools/default/buckets/<bucket>/collections/<scope_name>/<coll_name>
+
+delete scope
+DELETE /pools/default/buckets/<bucket>/collections/<scope_name>
+
+delete collection
+DELETE /pools/default/buckets/<bucket>/collections/<scope_name>/<coll_name>
+
+---------------------------------------------------
+
+1.
+Aliaksey:
+So in the end, it can be a mix of both: unanimous agreement for new collections, activate what's available for existing collections.
+
+David Haikney:
+I think these requests are suitably different and should be considered separately. Being able to restore capacity whilst the cluster is unhealthy is a fair request. Being able to update the set of collections whilst the cluster is unhealthy is something we could quite reasonably deny.
+
+2. Is this still a thing?
+
+Making ns_server the only owner of collections metadata. Particularly, collections metadata only propagates in the cluster by means of ns_server's metadata system.
+
+
+MB-28722 rest api's for collections
+    
+    get manifest:
+    GET /pools/default/buckets/<bucket>/collections
+    
+    add scope
+    POST /pools/default/buckets/<bucket>/collections
+    name=<scope_name>
+    
+    add collection
+    POST /pools/default/buckets/<bucket>/collections/<scope_name>
+    name=<collection_name>
+    
+    delete scope
+    DELETE /pools/default/buckets/<bucket>/collections/<scope_name>
+    
+    delete collection
+    DELETE /pools/default/buckets/<bucket>/collections/<scope_name>/<coll_name>
+
+
+--------------------------------------------
+
+ns_janitor_server:run_cleanup({bucket, Bucket})
+
+cleanup = majority quorum
+
+janitor_agent:apply_new_bucket_config_with_timeout
+
+
+curl -v http://Administrator:asdasd@localhost:9000/settings/developerPreview -X POST -d 'enabled=true'
+
+
+curl -v "http://Administrator:asdasd@localhost:9000/pools/default/buckets/test/collections" | python -m json.tool
+
+curl -v -X POST "http://Administrator:asdasd@localhost:9000/pools/default/buckets/test/collections" -d "name=tests"
+
+
+----------------------------------------------------
+
+https://issues.couchbase.com/browse/MB-32325
+
+The proposed solution:
+1. ns_server will take care about setting the latest manifest known to cluster to memcached bucket right before promoting any replicas to active due to after failover fixup.
+2. memcached will take care about promoting current bucket manifest to any replica becoming active, if the manifest ID exceed the one on the vbucket.
+
+
+Wait for collections:
+curl -v -X POST "http://Administrator:asdasd@localhost:9000/pools/default/buckets/test/collections/@ensureManifest/3"
+
+
+[ns_server:debug,2019-06-19T12:09:52.743-07:00,n_0@192.168.1.101:<0.1053.0>:collections:do_update:144]Performing operation {create_collection,"tests","blahahfg",[]} on bucket "test"
+[ns_server:debug,2019-06-19T12:09:56.793-07:00,n_0@192.168.1.101:<0.1664.0>:collections:wait_for_manifest_uid:384]BLAH rrr {#Ref<0.2524761185.3846701058.87669>,ok}
+[ns_server:debug,2019-06-19T12:09:56.819-07:00,n_1@127.0.0.1:<0.1471.0>:collections:wait_for_manifest_uid:384]BLAH rrr {#Ref<0.2544350657.3846701064.95363>,ok}
+[ns_server:debug,2019-06-19T12:09:56.820-07:00,n_0@192.168.1.101:<0.424.0>:misc:rpc_multicall_with_plist_result:971]BLAH {[ok,ok],[]}
+::1 - Administrator [19/Jun/2019:12:09:56 -0700] "POST /pools/default/buckets/test/collections/@ensureManifest/6 HTTP/1.1" 200 0 - curl/7.54.0
+
+
+---------------------
+
+get_buckets(Config) ->
+    ns_config:search_prop(Config, buckets, configs, []).
+
+
+check_config
+
+
+janitor_agent:apply_new_bucket_config_with_timeout is always called with Rebalancer = undefined
+
+which means that apply_new_bucket_config is always called with Rebalancer = undefined
+
+which means that get_apply_new_config_call is always called with Rebalancer = undefined
+
+
+-----------------------------------------
+
+[ns_server:debug,2019-07-08T02:17:24.935-07:00,n_0@127.0.0.1:<0.4207.0>:memcached_bucket_config:ensure_collections:251]Applying collection manifest to bucket "test" due to id change from <<"9">> to <<"a">>. Manifest = {[{uid,
+                                                                                                      <<"a">>},
+                                                                                                     {scopes,
+                                                                                                      [{[{name,
+                                                                                                          <<"testsaaaaaaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"11">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaaaaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"10">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaaaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"f">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"e">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"d">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"c">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"b">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsaa">>},
+                                                                                                         {uid,
+                                                                                                          <<"a">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"testsa">>},
+                                                                                                         {uid,
+                                                                                                          <<"9">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"tests">>},
+                                                                                                         {uid,
+                                                                                                          <<"8">>},
+                                                                                                         {collections,
+                                                                                                          []}]},
+                                                                                                       {[{name,
+                                                                                                          <<"_default">>},
+                                                                                                         {uid,
+                                                                                                          <<"0">>},
+                                                                                                         {collections,
+                                                                                                          [{[{name,
+                                                                                                              <<"_default">>},
+                                                                                                             {uid,
+                                                                                                              <<"0">>}]}]}]}]}]}
+[ns_server:debug,2019-07-08T02:17:24.936-07:00,n_0@127.0.0.1:<0.4207.0>:ns_memcached_sockets_pool:executing_on_socket:78]Exception while executing on socket {{127,0,0,1},62857}: {error,badarg,
+                                                          [{erlang,
+                                                            list_to_integer,
+                                                            ["a"],
+                                                            []},
+                                                           {memcached_bucket_config,
+                                                            ensure_collections,
+                                                            2,
+                                                            [{file,
+                                                              "src/memcached_bucket_config.erl"},
+                                                             {line,260}]},
+                                                           {ns_memcached,
+                                                            '-run_check_config/2-fun-0-',
+                                                            2,
+                                                            [{file,
+                                                              "src/ns_memcached.erl"},
+                                                             {line,805}]},
+                                                           {ns_memcached,
+                                                            '-perform_very_long_call/3-fun-0-',
+                                                            2,
+                                                            [{file,
+                                                              "src/ns_memcached.erl"},
+                                                             {line,351}]},
+                                                           {ns_memcached_sockets_pool,
+                                                            '-executing_on_socket/3-fun-0-',
+                                                            3,
+                                                            [{file,
+                                                              "src/ns_memcached_sockets_pool.erl"},
+                                                             {line,73}]},
+                                                           {async,
+                                                            '-async_init/4-fun-2-',
+                                                            3,
+                                                            [{file,
+                                                              "src/async.erl"},
+                                                             {line,211}]}]}
+
+[error_logger:error,2019-07-08T02:17:24.936-07:00,n_0@127.0.0.1:error_logger<0.32.0>:ale_error_logger_handler:do_log:203]Error in process <0.4207.0> on node 'n_0@127.0.0.1' with exit value:
+{badarg,
+    [{erlang,list_to_integer,["a"],[]},
+     {memcached_bucket_config,ensure_collections,2,
+         [{file,"src/memcached_bucket_config.erl"},{line,260}]},
+     {ns_memcached,'-run_check_config/2-fun-0-',2,
+         [{file,"src/ns_memcached.erl"},{line,805}]},
+     {ns_memcached,'-perform_very_long_call/3-fun-0-',2,
+         [{file,"src/ns_memcached.erl"},{line,351}]},
+     {ns_memcached_sockets_pool,'-executing_on_socket/3-fun-0-',3,
+         [{file,"src/ns_memcached_sockets_pool.erl"},{line,73}]},
+     {async,'-async_init/4-fun-2-',3,[{file,"src/async.erl"},{line,211}]}]}
+
+[ns_server:debug,2019-07-08T02:17:24.937-07:00,n_0@127.0.0.1:ns_memcached-test<0.526.0>:ns_memcached:handle_info:717]Got {'EXIT',<0.4205.0>,
+        {badarg,
+            [{erlang,list_to_integer,["a"],[]},
+             {memcached_bucket_config,ensure_collections,2,
+                 [{file,"src/memcached_bucket_config.erl"},{line,260}]},
+             {ns_memcached,'-run_check_config/2-fun-0-',2,
+                 [{file,"src/ns_memcached.erl"},{line,805}]},
+             {ns_memcached,'-perform_very_long_call/3-fun-0-',2,
+                 [{file,"src/ns_memcached.erl"},{line,351}]},
+             {ns_memcached_sockets_pool,'-executing_on_socket/3-fun-0-',3,
+                 [{file,"src/ns_memcached_sockets_pool.erl"},{line,73}]},
+             {async,'-async_init/4-fun-2-',3,
+                 [{file,"src/async.erl"},{line,211}]}]}}. Exiting.
+
+
+-------------------------------------------------------------
+
+[ns_server:debug,2019-07-08T02:21:02.350-07:00,n_0@127.0.0.1:<0.1941.0>:ns_memcached_sockets_pool:executing_on_socket:78]Exception while executing on socket {{127,0,0,1},64001}: {error,badarg,
+                                                          [{erlang,
+                                                            list_to_integer,
+                                                            ["a"],
+                                                            []},
+                                                           {ns_memcached,
+                                                            '-get_collections_uid/1-fun-0-',
+                                                            1,
+                                                            [{file,
+                                                              "src/ns_memcached.erl"},
+                                                             {line,1412}]},
+                                                           {ns_memcached,
+                                                            '-perform_very_long_call/3-fun-0-',
+                                                            2,
+                                                            [{file,
+                                                              "src/ns_memcached.erl"},
+                                                             {line,351}]},
+                                                           {ns_memcached_sockets_pool,
+                                                            '-executing_on_socket/3-fun-0-',
+                                                            3,
+                                                            [{file,
+                                                              "src/ns_memcached_sockets_pool.erl"},
+                                                             {line,73}]},
+                                                           {async,
+                                                            '-async_init/4-fun-2-',
+                                                            3,
+                                                            [{file,
+                                                              "src/async.erl"},
+                                                             {line,211}]}]}
+
+[error_logger:error,2019-07-08T02:21:02.350-07:00,n_0@127.0.0.1:error_logger<0.32.0>:ale_error_logger_handler:do_log:203]Error in process <0.1941.0> on node 'n_0@127.0.0.1' with exit value:
+{badarg,
+    [{erlang,list_to_integer,["a"],[]},
+     {ns_memcached,'-get_collections_uid/1-fun-0-',1,
+         [{file,"src/ns_memcached.erl"},{line,1412}]},
+     {ns_memcached,'-perform_very_long_call/3-fun-0-',2,
+         [{file,"src/ns_memcached.erl"},{line,351}]},
+     {ns_memcached_sockets_pool,'-executing_on_socket/3-fun-0-',3,
+         [{file,"src/ns_memcached_sockets_pool.erl"},{line,73}]},
+     {async,'-async_init/4-fun-2-',3,[{file,"src/async.erl"},{line,211}]}]}
+
+[ns_server:error,2019-07-08T02:21:02.351-07:00,n_0@127.0.0.1:<0.407.0>:menelaus_web:loop:163]Server error during processing: ["web request failed",
+                                 {path,
+                                  "/pools/default/buckets/test/collections/@ensureManifest/10"},
+                                 {method,'POST'},
+                                 {type,error},
+                                 {what,
+                                  {badmatch,
+                                   {[],
+                                    [{'n_0@127.0.0.1',
+                                      {'EXIT',
+                                       {badarg,
+                                        [{erlang,list_to_integer,["a"],[]},
+                                         {ns_memcached,
+                                          '-get_collections_uid/1-fun-0-',1,
+                                          [{file,"src/ns_memcached.erl"},
+                                           {line,1412}]},
+                                         {ns_memcached,
+                                          '-perform_very_long_call/3-fun-0-',
+                                          2,
+                                          [{file,"src/ns_memcached.erl"},
+                                           {line,351}]},
+                                         {ns_memcached_sockets_pool,
+                                          '-executing_on_socket/3-fun-0-',3,
+                                          [{file,
+                                            "src/ns_memcached_sockets_pool.erl"},
+                                           {line,73}]},
+                                         {async,'-async_init/4-fun-2-',3,
+                                          [{file,"src/async.erl"},
+                                           {line,211}]}]}}}],
+                                    []}}},
+                                 {trace,
+                                  [{collections,wait_for_manifest_uid,5,
+                                    [{file,"src/collections.erl"},{line,392}]},
+                                   {menelaus_web_collections,
+                                    '-handle_ensure_manifest/3-fun-3-',6,
+                                    [{file,"src/menelaus_web_collections.erl"},
+                                     {line,91}]},
+                                   {request_throttler,do_request,3,
+                                    [{file,"src/request_throttler.erl"},
+                                     {line,59}]},
+                                   {menelaus_web,loop,2,
+                                    [{file,"src/menelaus_web.erl"},
+                                     {line,141}]},
+                                   {mochiweb_http,headers,5,
+                                    [{file,
+                                      "/Users/artem/work/madhatter/couchdb/src/mochiweb/mochiweb_http.erl"},
+                                     {line,94}]},
+                                   {proc_lib,init_p_do_apply,3,
+                                    [{file,"proc_lib.erl"},{line,247}]}]}]
+
+-------------------------------------
+
+error here:
+ns_memcached:get_collections_uid("test").
+
+
+--------------------------------------------------
+
+[user:info,2019-07-08T11:33:22.036-07:00,n_0@127.0.0.1:ns_memcached-test<0.668.0>:ns_memcached:do_terminate:768]Control connection to memcached on 'n_0@127.0.0.1' disconnected: {badarg,
+                                                                  [{erlang,
+                                                                    list_to_integer,
+                                                                    ["b"],
+                                                                    []},
+                                                                   {memcached_bucket_config,
+                                                                    ensure_collections,
+                                                                    2,
+                                                                    [{file,
+                                                                      "src/memcached_bucket_config.erl"},
+                                                                     {line,
+                                                                      260}]},
+                                                                   {ns_memcached,
+                                                                    '-run_check_config/2-fun-0-',
+                                                                    2,
+                                                                    [{file,
+                                                                      "src/ns_memcached.erl"},
+                                                                     {line,
+                                                                      805}]},
+                                                                   {ns_memcached,
+                                                                    '-perform_very_long_call/3-fun-0-',
+                                                                    2,
+                                                                    [{file,
+                                                                      "src/ns_memcached.erl"},
+                                                                     {line,
+                                                                      351}]},
+                                                                   {ns_memcached_sockets_pool,
+                                                                    '-executing_on_socket/3-fun-0-',
+                                                                    3,
+                                                                    [{file,
+                                                                      "src/ns_memcached_sockets_pool.erl"},
+                                                                     {line,
+                                                                      73}]},
+                                                                   {async,
+                                                                    '-async_init/4-fun-2-',
+                                                                    3,
+                                                                    [{file,
+                                                                      "src/async.erl"},
+                                                                     {line,
+                                                                      211}]}]}
+
+[ns_server:debug,2019-07-08T11:33:22.034-07:00,n_0@127.0.0.1:<0.3726.0>:memcached_bucket_config:ensure_collections:251]Applying collection manifest to bucket "test" due to id change from <<"a">> to <<"b">>. Manifest

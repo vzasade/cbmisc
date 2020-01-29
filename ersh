@@ -25,5 +25,5 @@ if [ -z "$erl_node" ]; then
     exit 1
 fi
 
-echo erl -name $this_node -remsh $erl_node -setcookie $erl_cookie
-erl -name $this_node -remsh $erl_node -setcookie $erl_cookie
+echo erl -name $this_node -remsh $erl_node -setcookie $erl_cookie -kernel inetrc '"/Users/artem/work/cbmisc/hosts.cfg"'
+erl -name $this_node -remsh $erl_node -setcookie $erl_cookie -kernel inetrc '"/Users/artem/work/cbmisc/hosts.cfg"'
