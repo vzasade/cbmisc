@@ -11,3 +11,11 @@ New Config
 ----------
 Raft: https://raft.github.io/
 ETCD: https://github.com/coreos/etcd
+
+Erlang raft:
+https://github.com/dreyk/zraft_lib
+
+Global names:
+-------------
+https://github.com/okeuday/cpg
+http://www.ostinelli.net/an-evaluation-of-erlang-global-process-registries-meet-syn/

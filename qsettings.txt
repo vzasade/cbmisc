@@ -1,0 +1,24 @@
+GET /admin/settings
+
+/Users/artem/work/madhatter/goproj/src/github.com/couchbase/query/server/settings/couchbase/metkv_settings.go
+
+query_port = 9500 - 1 - i = 9499
+
+curl http://Administrator:asdasd@127.0.0.1:9499/admin/settings | python -m json.tool
+
+metakv dir: /query/settings/config
+
+
+curl http://127.0.0.1:9000/settings/querySettings/curlWhitelist
+
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/settings/querySettings/curlWhitelist
+
+
+curl -v http://Administrator:asdasd@127.0.0.1:9000/settings/querySettings
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/settings/querySettings --data 'queryTmpSpaceSize=5124'
+
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/settings/querySettings --data 'queryPipelineCap=600'
+

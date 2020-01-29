@@ -1,0 +1,291 @@
+10000 users
+
+Creating:
+Started 8:18
+1000: 8:20
+2000: 8:25
+3100: 8:35
+4000: 8:46
+5000: 9:02
+6000: 9:21
+7200: 9:48
+
+at 4600
+(n_0@127.0.0.1)6> erlang:process_info(whereis(users_storage), memory).
+{memory,19129424}
+
+(n_0@127.0.0.1)10> erlang:process_info(whereis(users_storage), heap_size).   
+{heap_size,318187}
+(n_0@127.0.0.1)7> erlang:process_info(whereis(users_replicator), memory).
+{memory,138 32552}
+(n_0@127.0.0.1)9> erlang:process_info(whereis(users_replicator), heap_size).
+{heap_size,1727361}
+
+
+on 7200:
+[ns_server:debug,2017-06-15T21:50:38.691-07:00,n_0@127.0.0.1:users_storage<0.890.0>:replicated_dets:handle_call:206]Suspended by process <0.32400.9>
+[ns_server:debug,2017-06-15T21:50:38.827-07:00,n_0@127.0.0.1:users_storage<0.890.0>:replicated_dets:handle_call:213]Released by process <0.32400.9>
+(n_0@127.0.0.1)42> erlang:process_info(whereis(memcached_permissions), memory).
+{memory,13089864}
+(n_0@127.0.0.1)43> erlang:process_info(whereis(memcached_passwords), memory).  
+{memory,7637496}
+(n_0@127.0.0.1)44> erlang:process_info(whereis(users_storage), memory).
+{memory,19129040}
+(n_0@127.0.0.1)45> erlang:process_info(whereis(users_replicator), memory).
+{memory,34352}
+3213620 Jun 15 21:50 memcached.rbac
+9999400 Jun 15 21:51 users.dets
+4809646 Jun 15 21:50 isasl.pw
+
+20 Threads:
+start: 10:03
+finish: < 10:20
+
+13729600 Jun 15 22:19 users.dets
+4451115 Jun 15 22:26 memcached.rbac
+6614837 Jun 15 22:26 isasl.pw
+
+After load:
+(n_0@192.168.0.2)1> erlang:process_info(whereis(memcached_permissions), memory).
+{memory,1574120}
+(n_0@192.168.0.2)2> erlang:process_info(whereis(memcached_passwords), memory).  
+{memory,11516744}
+(n_0@192.168.0.2)3> erlang:process_info(whereis(users_storage), memory).      
+{memory,23879904}
+(n_0@192.168.0.2)4> erlang:process_info(whereis(users_replicator), memory).
+{memory,189116344}
+
+After reboot:
+(n_0@192.168.0.2)1> erlang:process_info(whereis(memcached_permissions), memory).
+{memory,13089864}
+(n_0@192.168.0.2)2> erlang:process_info(whereis(memcached_passwords), memory).  
+{memory,11516744}
+(n_0@192.168.0.2)3> erlang:process_info(whereis(users_storage), memory).      
+{memory,23879904}
+(n_0@192.168.0.2)4> erlang:process_info(whereis(users_replicator), memory).
+{memory,78171224}
+
+On fresh:
+(n_0@127.0.0.1)1> erlang:process_info(whereis(memcached_permissions), memory).
+{memory,67880}
+(n_0@127.0.0.1)2> erlang:process_info(whereis(memcached_passwords), memory).
+{memory,109352}
+(n_0@127.0.0.1)3> erlang:process_info(whereis(users_storage), memory).
+{memory,13656}
+(n_0@127.0.0.1)4> erlang:process_info(whereis(users_replicator), memory).
+{memory,16672}
+
+Question:
+
+Why am I seeing this when loading:
+[ns_server:info,2017-06-15T22:09:29.202-07:00,n_1@127.0.0.1:<0.14928.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.203-07:00,n_1@127.0.0.1:<0.14928.3>:goport:handle_port_erlang_exit:474]Port terminated
+[ns_server:info,2017-06-15T22:09:29.207-07:00,n_1@127.0.0.1:<0.14927.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.207-07:00,n_1@127.0.0.1:<0.14927.3>:goport:handle_port_erlang_exit:474]Port terminated
+[ns_server:info,2017-06-15T22:09:29.209-07:00,n_1@127.0.0.1:<0.14933.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.210-07:00,n_1@127.0.0.1:<0.14933.3>:goport:handle_port_erlang_exit:474]Port terminated
+[ns_server:info,2017-06-15T22:09:29.210-07:00,n_1@127.0.0.1:<0.14932.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.210-07:00,n_1@127.0.0.1:<0.14932.3>:goport:handle_port_erlang_exit:474]Port terminated
+[ns_server:info,2017-06-15T22:09:29.226-07:00,n_1@127.0.0.1:<0.14945.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.226-07:00,n_1@127.0.0.1:<0.14945.3>:goport:handle_port_erlang_exit:474]Port terminated
+[ns_server:info,2017-06-15T22:09:29.227-07:00,n_1@127.0.0.1:<0.14944.3>:goport:handle_port_os_exit:458]Port exited with status 0
+[ns_server:debug,2017-06-15T22:09:29.228-07:00,n_1@127.0.0.1:<0.14944.3>:goport:handle_port_erlang_exit:474]Port terminated
+
+- need to include path to log message
+
+
+Loading of 100000 with 20 threads
+15m27.772405477s
+
+async with async ver change
+9m54.570787136s
+
+
+
+-------------------
+
+replicate_newnodes_docs
+1. sent to all other nodes storages on replicator start
+2. sent to own storage on any nodeup event
+3. sent to itself on replicated_storage start
+
+replicated_storage:
+Module:get_all_docs(ChildState)
+sends {replicate_newnodes_docs, Docs} to replicator
+
+replicated_dets:
+get_all_docs(#state{name = TableName}) ->
+    %% TODO to be replaced with something that does not read the whole thing to memory
+    dets:foldl(fun(Doc, Acc) ->
+                       [Doc | Acc]
+               end, [], TableName).
+
+doc_replicator
+{replicate_newnodes_docs, Docs}
+
+00 add node timeline:
+[cluster:debug,2017-06-23T12:02:44.339-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:handle_call:174]handling add_node("127.0.0.1", 9001, <<"0">>, ..)
+[cluster:info,2017-06-23T12:02:44.340-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:do_change_address:436]Change of address to "192.168.0.2" is requested.
+[cluster:debug,2017-06-23T12:02:44.340-07:00,n_0@192.168.0.2:<0.31464.0>:ns_cluster:maybe_rename:466]Not renaming node.
+[cluster:debug,2017-06-23T12:02:44.341-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:do_add_node_with_connectivity:546]Posting node info to engage_cluster on {"127.0.0.1",9001}:
+[cluster:debug,2017-06-23T12:02:44.348-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:do_add_node_with_connectivity:553]Reply from engage_cluster on {"127.0.0.1",9001}:
+[cluster:debug,2017-06-23T12:02:44.349-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:verify_otp_connectivity:622]port_please("n_1", "127.0.0.1") = 21102
+[cluster:info,2017-06-23T12:02:44.350-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:node_add_transaction_finish:776]Started node add transaction by adding node 'n_1@127.0.0.1' to nodes_wanted (group: 0)
+[cluster:debug,2017-06-23T12:02:44.351-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:do_add_node_engaged_inner:695]Posting the following to complete_join on "127.0.0.1:9001":
+
+.......................
+
+[cluster:debug,2017-06-23T12:03:04.681-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:do_add_node_engaged_inner:704]Reply from complete_join on "127.0.0.1:9001":
+{ok,[]}
+[cluster:debug,2017-06-23T12:03:04.682-07:00,n_0@192.168.0.2:ns_cluster<0.161.0>:ns_cluster:handle_call:176]add_node("127.0.0.1", 9001, <<"0">>, ..) -> {ok,'n_1@127.0.0.1'}
+
+
+
+01 add node timeline:
+[error_logger:info,2017-06-23T12:02:47.647-07:00,n_1@127.0.0.1:error_logger<0.6.0>:ale_error_logger_handler:do_log:203]
+=========================PROGRESS REPORT=========================
+          supervisor: {local,ns_server_sup}
+             started: [{pid,<0.16986.0>},
+                       {name,ns_crash_log_consumer},
+                       {mfargs,{ns_log,start_link_crash_consumer,[]}},
+                       {restart_type,{permanent,4}},
+                       {shutdown,1000},
+                       {child_type,worker}]
+
+[error_logger:info,2017-06-23T12:03:02.694-07:00,n_1@127.0.0.1:error_logger<0.6.0>:ale_error_logger_handler:do_log:203]
+=========================PROGRESS REPORT=========================
+          supervisor: {local,ns_server_sup}
+             started: [{pid,<0.16987.0>},
+                       {name,memcached_passwords},
+                       {mfargs,{memcached_passwords,start_link,[]}},
+                       {restart_type,permanent},
+                       {shutdown,1000},
+                       {child_type,worker}]
+
+
+=========================PROGRESS REPORT=========================
+          supervisor: {local,ns_server_sup}
+             started: [{pid,<0.16994.0>},
+                       {name,memcached_permissions},
+                       {mfargs,{memcached_permissions,start_link,[]}},
+                       {restart_type,permanent},
+                       {shutdown,1000},
+                       {child_type,worker}]
+
+
+[user:info,2017-06-23T12:03:04.680-07:00,n_1@127.0.0.1:ns_cluster<0.161.0>:ns_cluster:perform_actual_join:1143]Node n_1@127.0.0.1 joined cluster
+[cluster:debug,2017-06-23T12:03:04.680-07:00,n_1@127.0.0.1:ns_cluster<0.161.0>:ns_cluster:handle_call:188]complete_join([{<<"targetNode">>,<<"n_1@127.0.0.1">>},
+               {<<"requestedServices">>,
+
+all_docs(#state{name = TableName}) ->
+    ?make_producer(do_select_from_dets_locked(
+                     TableName, '_', 500,
+                     fun (Batch) -> ?yield({batch, Batch}) end))).
+
+
+
+handle_cast({replicated_update, {batch, Batch}}, #state{child_module = Module,
+                                                        child_state = ChildState} = State) ->
+handle_cast({replicated_update, Doc}, #state{child_module = Module,
+                                             child_state = ChildState} = State) ->
+    NewChildState = handle_replicated_update(Doc, Module, ChildState),
+    {noreply, State#state{child_state = NewChildState}};
+
+
+handle_replicated_update(Doc, Module, ChildState) ->
+    %% this is replicated from another node in the cluster. We only accept it
+    %% if it doesn't exist or the rev is higher than what we have.
+    Rev = Module:get_revision(Doc),
+    Proceed = case Module:find_doc(Module:get_id(Doc), ChildState) of
+                  false ->
+                      true;
+                  ExistingDoc ->
+                      case Module:get_revision(ExistingDoc) of
+                          DiskRev when Rev > DiskRev ->
+                              true;
+                          _ ->
+                              false
+                      end
+              end,
+    if Proceed ->
+            ?log_debug("Writing replicated doc ~p", [Doc]),
+            {ok, NewChildState} = Module:save_doc(Doc, ChildState),
+            NewChildState;
+       true ->
+            ChildState
+    end.
+
+
+                                       [replicate_changes_to_node(Module, StorageFrontend, S, Docs)
+                                        || S <- NewNodes]
+
+
+replicate_changes_to_node(_Module, StorageFrontend, Node, {batch, _Docs} = Batch) ->
+    ?log_debug("Sending batch to ~p", [Node]),
+    gen_server:cast({StorageFrontend, Node}, {replicated_update, Batch});
+
+
+replicate_changes_to_node(Module, StorageFrontend, Node, Docs) ->
+    [replicate_change_to_node(Module, StorageFrontend, Node, D) || D <- Docs].
+
+
+--------------------------------------------------------------------
+
+[ns_server:debug,2017-06-30T22:12:20.499-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 122397 (7352) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.512-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 115885 (7323) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.523-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 106539 (7359) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.535-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 109207 (7313) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.545-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 109485 (7311) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.555-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 50359 (7331) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.561-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 21325 (7382) to 'n_1@127.0.0.1'
+[ns_server:debug,2017-06-30T22:12:20.561-07:00,n_0@127.0.0.1:users_replicator<0.205.0>:doc_replicator:replicate_changes_to_node:104]Sending batch of size 614 (192) to 'n_1@127.0.0.1'
+
+Id's + revisions vs the whole thing
+6%
+
+
+replicate_changes_to_node
+1. send Id's + Revisions
+2. node
+
+
+------------------------------------------------
+
+2 nodes: 5:55 sec, 5:87, 6:03
+
+
+----------------------------------------
+with local keys:
+2 4:85
+3 4:80
+4 5:19
+5 5:30
+
+
+
+./testrunner -i b/resources/dev-4-nodes-xdcr.ini makefile=True,log_level=DEBUG -t xdcr.uniXDCR.unidirectional.load_with_ops,replicas=1,items=10000,value_size=128,ctopology=chain,rdirection=unidirection,doc-ops=update-delete
+
+
+2 4:62
+3 4:71
+4 5:22
+5 5:41
+
+2 5:74
+3 7:87
+4 15:22
+5 20:13
+
+(n_0@192.168.1.115)1> dets:info(users_storage).
+[{type,set},
+ {keypos,2},
+ {size,20000},
+ {file_size,13728343},
+ {filename,"/Users/artem/work/spock/ns_server/data/n_0/config/users.dets"}]
+
+(n_4@127.0.0.1)1> dets:info(users_storage).
+[{type,set},
+ {keypos,2},
+ {size,20000},
+ {file_size,13727677},
+ {filename,"/Users/artem/work/spock/ns_server/data/n_4/config/users.dets"}]

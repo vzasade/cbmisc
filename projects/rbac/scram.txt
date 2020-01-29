@@ -1,0 +1,219 @@
+SCRAM Spec:
+https://tools.ietf.org/html/rfc5802
+
+SCRAM over HTTP:
+https://tools.ietf.org/html/rfc7804
+
+Erlang:
+https://github.com/erdemaksu/scramerl
+
+SCRAM in golang:
+https://github.com/liuggio/golang-stupid-microservice/blob/master/Godeps/_workspace/src/gopkg.in/mgo.v2/internal/scram/scram.go
+
+In GO:
+~/work/vulcan/godeps/src/gopkg.in/couchbase/gocbcore.v7/authclient.go
+~/work/vulcan/godeps/src/gopkg.in/couchbase/gocbcore.v7/scramclient.go
+
+
+verify_rest_auth - creds extracted here
+
+1. verify_rest_auth should return {RV, Headers}, caller should apply headers
+2. verify_rest_auth_with_auth  should be rpc'd from couchdb node, not authenticate
+3. verify_rest_auth should return {just_reply, HttpStatus, Headers} on scram-sha 1st call
+4. on second scram sha call header menelaus-scram-sha-reply should be added
+5. all reply calls should honor that header and attach proper verification header on reply
+
+
+
+
+
+
+server-error-value = "invalid-encoding" /
+                  "extensions-not-supported" /  ; unrecognized 'm' value
+                  "invalid-proof" /
+                  "channel-bindings-dont-match" /
+                  "server-does-support-channel-binding" /
+                    ; server does not support channel binding
+                  "channel-binding-not-supported" /
+                  "unsupported-channel-binding-type" /
+                  "unknown-user" /
+                  "invalid-username-encoding" /
+                    ; invalid username encoding (invalid UTF-8 or
+                    ; SASLprep failed)
+                  "no-resources" /
+                  "other-error" /
+                  server-error-value-ext
+           ; Unrecognized errors should be treated as "other-error".
+           ; In order to prevent information disclosure, the server
+           ; may substitute the real reason with "other-error".
+
+[{<<"plain">>,
+  <<"iowwB8UdhBja94RC9xK5WnjIdwCSxZ8FPoqL3g21YA+UUsXr">>},
+ {<<"sha1">>,
+  {[{<<"h">>,<<"Gw48uPBbkul+BAVyfJbeumdWZnw=">>},
+    {<<"s">>,<<"tAfrmz2090hVbhdddo6NAcJtKHc=">>},
+    {<<"i">>,4000}]}},
+ {<<"sha256">>,
+  {[{<<"h">>,
+     <<"1kd7dTLmTN9fQOW83BHDjABjs5qrX+ZtMG/Wq+ElHd8=">>},
+    {<<"s">>,<<"8+MT7F2nwiqGkMIUX9Cs6wEzaBNuWt5w2Z2kNwIsNT0=">>},
+    {<<"i">>,4000}]}},
+ {<<"sha512">>,
+  {[{<<"h">>,
+     <<"wrirmbgwrQ3S+zWxRn9654cnJ3IP1+p87cfiy7LUMd56K4J9CH07zOrU+uuaUU19+0LZv6XM7MsR"...>>},
+    {<<"s">>,
+     <<"qdPbZbSXTjVJiAuLTv6E5tIbFNFbsFPC1RIiLoASKhnkMUEe6ySWdgDRtUtBW9lfe6PL3BkN"...>>},
+    {<<"i">>,4000}]}}]
+
+------------------------------------------------------
+
+./src/gopkg.in/couchbase/gocbcore.v7/authclient.go
+
+
+
+
+
+ns_server:debug,2018-02-19T22:46:13.040-08:00,n_0@127.0.0.1:<0.329.0>:scram_sha:calculate_client_proof:237]BLAH CP [sha512,
+         {saltedPassword,"w5wsQQ10KoCgaC1FIZ0H06LJo4ODBExNc4HHqk+4+37uhJ/I5rvhCX1VVtDsH/G/jX+ZrlXN2h7YEkVnShqG5Q=="},
+         {authMessage,"n=test,r=gObWieqCG7nKC1R9u1lKbcKC3F9vbTKk,r=gObWieqCG7nKC1R9u1lKbcKC3F9vbTKkQuA]Grb<A5mkalX,s=P2sFAYNotXe10VSGtV8jFytGX1aGsWQdylUPGNBb5jmvJRUZ0/6ocschsh2S87aC13gLZKaf/MTxB6yfahjqxA==,i=4000,c=biws,r=gObWieqCG7nKC1R9u1lKbcKC3F9vbTKkQuA]Grb<A5mkalX"},
+         {clientKey,"MEZAZ0WuafHGaJ7urlUF6cwQdywRmCdWdh/RGcyunSybcGfQ+J9nUl90KlaqMp4QVHZMPs8eeMQXVLC6UU4Ecg=="},
+         {storedKey,"QS9+R1U+qn52Dmnj+iL+IOCE5r2WztGg95fg7SpMMuwtDO6YwcmApDFHowfBqelPhAKaZlB/RQ0VULf8e3OLOg=="},
+         {clientSignature,"5i9VH8+3MLGTP1e3yxjvbY7N3XO3MNlTc2/+fK448SQfvcv8+375QPsANJDim1I5lbt8yvfKPHblA3unNC9KKQ=="}]
+
+
+saltedPassword
+w5wsQQ10KoCgaC1FIZ0H06LJo4ODBExNc4HHqk+4+37uhJ/I5rvhCX1VVtDsH/G/jX+ZrlXN2h7YEkVnShqG5Q==
+
+
+clientKey
+SYnz4A14Lq2pGpuQiQZlznK4sAKZbBfzXEhmbpv/Ose1/3daHLWK3h7KHAV3F6gGLWh91BkRnnpO8Hsm30w1fw==
+storedKey
+TCsmcFxSMeNMca0oSOhyxTVrMdPsvtw4Y9kf3Flt29JycdRmTtL067Me1e0XvIOkLuVH8wiWUiqLt18nNjuk4w==
+clientSignature
+RSxTjBBDuSv739QBP4cUMr/QaxpvgfvvA139A2oeDSq+Ka9SIQlgHsC5Jl/ppCqzfqOco0gY7Kg0ZZvvM6Zaxw==
+clientProof
+DKWgbB07l4ZSxU+RtoFx/M1o2xj27ewcXxWbbfHhN+0L1tgIPbzqwN5zOlqes4K1U8vhd1EJctJ6leDJ7OpvuA==
+
+
+[couchdb:info,2018-02-20T15:04:48.480-08:00,couchdb_n_0@127.0.0.1:<0.185.0>:couch_log:info:41]<ud>"127.0.0.1"</ud> - - <ud>'GET'</ud> <ud>"/blah%2F3"</ud> 404
+[couchdb:debug,2018-02-20T15:04:48.480-08:00,couchdb_n_0@127.0.0.1:<0.185.0>:couch_log:debug:38]httpd [60,"ud",62,"404",60,47,"ud",62] error response:
+ <ud>[[],<<"{\"error\":\"not_found\",\"reason\":\"missing\"}">>,[],10]</ud>
+
+
+[couchdb:error,2018-02-20T15:11:24.765-08:00,couchdb_n_0@127.0.0.1:<0.187.0>:couch_log:error:44]Uncaught error in HTTP request: {error,{case_clause,not_found}}
+
+Stacktrace: <ud>[{capi_frontend,with_verify_bucket_auth,4,
+                    [{file,"src/capi_frontend.erl"},{line,181}]},
+     {request_throttler,do_request,3,
+                        [{file,"src/request_throttler.erl"},{line,59}]},
+     {couch_httpd,handle_request,6,
+                  [{file,"/Users/artem/work/vulcan/couchdb/src/couchdb/couch_httpd.erl"},
+                   {line,228}]},
+     {mochiweb_http,headers,5,
+                    [{file,"/Users/artem/work/vulcan/couchdb/src/mochiweb/mochiweb_http.erl"},
+                     {line,94}]},
+     {proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,239}]}]</ud>
+
+
+couchdb:info,2018-02-20T15:18:07.828-08:00,couchdb_n_0@127.0.0.1:<0.186.0>:couch_log:info:41]<ud>"127.0.0.1"</ud> - - <ud>'GET'</ud> <ud>"/blah%2F3"</ud> 404
+[couchdb:debug,2018-02-20T15:18:07.828-08:00,couchdb_n_0@127.0.0.1:<0.186.0>:couch_log:debug:38]httpd [60,"ud",62,"404",60,47,"ud",62] error response:
+ <ud>[[],<<"{\"error\":\"not_found\",\"reason\":\"missing\"}">>,[],10]</ud>
+
+
+
+class AccessLogProcessor:
+    def __init__(self, ifile, ofile, salt):
+        self.ifile = ifile
+        self.ofile = ofile
+        self.sep = ' '
+        self.salt = salt
+        self.urls_to_redact = ['/settings/rbac/users',
+                               '/cbauth/checkPermission']
+
+    def do(self):
+        try:
+            with open(ifile, 'r') as inp:
+                with open(ofile, 'w+') as out:
+                    for line in inp:
+                        try:
+                            self._do_line(line)
+                        except Exception:
+                            pass
+                        out.write(self.line_out + self.line)
+        except IOError as e:
+            log("I/O error(%s): %s" % (e.errno, e.strerror))
+
+    def _process_url(self, url):
+        for prefix in self.urls_to_redact:
+            if url[:len(prefix)] == prefix:
+                return prefix + "(redacted)"
+            else:
+                return url
+
+    def _take_token(self):
+        r = self.line.split(self.sep, 1)
+        if len(r) < 2:
+            raise Exception
+        self.line = r[1]
+        return r[0]
+
+    def _put_token(self, token):
+        self.line_out += token + self.sep
+
+    def _skip_token(self):
+        self._put_token(self._take_token())
+
+    def _take_token_q(self, q1, q2):
+        if self.line[0] != q1:
+            raise Exception
+        r = self.line[1:].split(q2, 1)
+        if len(r) < 2 or r[1] == "" or r[1][0] != self.sep:
+            raise Exception
+        self.line = r[1][1:]
+        return r[0]
+
+    def _put_token_q(self, token, q1, q2):
+        self.line_out += q1 + token + q2 + self.sep
+
+    def _skip_token_q(self, q1, q2):
+        self._put_token_q(self._take_token_q(q1, q2), q1, q2)
+
+    def _hash(self, token):
+        hash_object = hashlib.sha1(self.salt + token)
+        return str(hash_object.hexdigest())
+
+    def _do_line(self, line):
+        self.line = line
+        self.line_out = ""
+
+        self._skip_token()
+        self._skip_token()
+
+        user = self._take_token()
+        if user == '-' or user[0] == '@':
+            self._put_token(user)
+        else:
+            self._put_token(self._hash(user))
+
+        self._skip_token_q('[', ']')
+
+        api = self._take_token_q('"', '"')
+        tokens = api.split(' ')
+        if len(tokens) != 3:
+            self._put_token_q(tokens, '"', '"')
+        else:
+            tokens[1] = self._process_url(tokens[1])
+            self._put_token_q(' '.join(api), '"', '"')
+
+
+[ns_server:debug,2018-02-21T17:19:18.217-08:00,n_0@127.0.0.1:ns_audit<0.379.0>:ns_audit:handle_call:106]Audit cluster_settings: [{cluster_name,<<"aaa">>},
+                         {quotas,{[{kv,7511},
+                                   {index,512},
+                                   {fts,512},
+                                   {cbas,1024},
+                                   {eventing,256}]}},
+                         {real_userid,{[{source,wrong_token},
+                                        {user,<<"<ud></ud>">>}]}},
+                         {sessionid,<<"5ad2a4d831aec4a24a1638383762aed2">>},
+                         {remote,{[{ip,<<"127.0.0.1">>},{port,56107}]}},
+                         {timestamp,<<"2018-02-21T17:19:18.216-08:00">>}]

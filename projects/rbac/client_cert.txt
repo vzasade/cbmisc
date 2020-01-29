@@ -1,0 +1,37 @@
+Requirements:
+https://docs.google.com/document/d/1moY1ourW2ZmYEKaqstMzSY3B0Pj4rWptLC7HR_-W1VM/edit?ts=58789c4d#heading=h.1kix3wng1rsj
+
+Estimation doc:
+https://docs.google.com/spreadsheets/d/1uw3NosmWfSrUo6-oPdOQUPEkzfuTHSL9siqsjymjofo/edit#gid=0
+
+1. Add "client cert required" configuration option to ns_config
+Trivial. 0.5 days.
+
+2. Support mapping certificate to user name
+I had an impression from the discussion we had that they do now want to map certificate to user name.
+But if they want it, the feature shouldn't take more than 2-3 days.
+Plus under assumption #1 we probably don't need ns_server to care about it.
+
+3. Support certification revocation lists (uploading, distributing, denying access to revoked certs)
+2-3 days, I guess it will be just pushing the list to memcached.
+
+4. Support upgrade (i.e. client certs not supported until cluster compat mode reaches correct level)
+That most likely to be trivial. 1 day maybe.
+
+5. Turn off unencrypted ports for ns_server, kv, views and xdcr services: 8091-95, 11209, 11210, etc
+ns_server: 1 week maybe. Considering that node joins cluster via http, not https. need to think about it more.
+CLI: Currently can use ssl to communicate with ns_server. So I guess no impact.
+Other components: Need to ask component owners.
+Plus ns_server currently uses http to comunicate with indexer, query, fts and xdcr locally. So 1-2 days will be required to change that.
+
+Additional tasks:
+
+6. Uploading client certificate to the node
+This is needed if we want ns_server use client certificate to connect to memcached. And I guess we do want it, since it is required that any connect without client cert must be rejected. This might include REST api and CLI changes, but I need to think about it more. In ideal case the same REST call will instruct ns_server to pick up client cert together with server cert from the inbox.
+3 days. Wild guess.
+
+7. Providing client certificates to components
+Whoever will want to talk https with memcached locally will have to have client cert(s) for "@..." users.
+Need to ask component owners for estimation. Plus few days of work on ns_server side will be needed.
+And this need to be designed together with Trond, because Trond wanted to use different "@" users for different
+components and we probably don't want to deal with multiple certificates in this case.

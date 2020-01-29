@@ -1,0 +1,334 @@
+CBAS: MB-27285
+
+
+Is mobile topology aware?
+
+query:
+
+query_node_spec(Config) ->
+    case ns_cluster_membership:should_run_service(Config, n1ql, node()) of
+        false ->
+            [];
+        _ ->
+            [build_query_node_spec(Config)]
+    end.
+
+{'query', Command,
+     [DataStoreArg, HttpArg, CnfgStoreArg, EntArg, Ipv6] ++ HttpsArgs,
+     [via_goport, exit_status, stderr_to_stdout,
+      {env, build_go_env_vars(Config, 'cbq-engine') ++
+           build_tls_config_env_var(Config)},
+      {log, ?QUERY_LOG_FILENAME}]}.
+
+------------------
+
+    case ProjectorCmd =/= false andalso
+        ns_cluster_membership:should_run_service(Config, kv, node()) of
+        false ->
+            [];
+
+
+            Spec = {'projector', ProjectorCmd, Args,
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {log, ?PROJECTOR_LOG_FILENAME},
+                     {env, build_go_env_vars(Config, projector)}]},
+
+--------------------
+
+Spec = {'indexer', IndexerCmd,
+IndexerCmd = path_config:component_path(bin, "indexer"),
+    case ns_cluster_membership:should_run_service(Config, index, node()) of
+        false ->
+            [];
+        _ ->
+
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {log, ?INDEXER_LOG_FILENAME},
+                     {env, build_go_env_vars(Config, index)}]},
+
+
+-------------------------
+
+    FtCmd = find_executable("cbft"),
+    NodeUUID = ns_config:search(Config, {node, node(), uuid}, false),
+    case FtCmd =/= false andalso
+        NodeUUID =/= false andalso
+        ns_cluster_membership:should_run_service(Config, fts, node()) of
+        false ->
+            [];
+        _ ->
+
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {log, ?FTS_LOG_FILENAME},
+                     {env, build_go_env_vars(Config, fts) ++ build_tls_config_env_var(Config)}]},
+
+----------------------
+
+    Command = path_config:component_path(bin, "eventing-producer"),
+    NodeUUID = ns_config:search(Config, {node, node(), uuid}, false),
+
+    case Command =/= false andalso
+        NodeUUID =/= false andalso
+        ns_cluster_membership:should_run_service(Config, eventing, node()) of
+        true ->
+
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {env, build_go_env_vars(Config, eventing) ++ build_tls_config_env_var(Config)},
+                     {log, ?EVENTING_LOG_FILENAME}]},
+
+-----------------
+
+    Cmd = find_executable("cbas"),
+    NodeUUID = ns_config:search(Config, {node, node(), uuid}, false),
+    case Cmd =/= false andalso
+        NodeUUID =/= false andalso
+        ns_cluster_membership:should_run_service(Config, cbas, node()) of
+        false ->
+            [];
+        _ ->
+
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {log, ?CBAS_LOG_FILENAME},
+                     {env, build_go_env_vars(Config, cbas)}]},
+
+-----------------------
+
+    CacheCmd = find_executable("cache-service"),
+    NodeUUID = ns_config:search(Config, {node, node(), uuid}, false),
+
+    case CacheCmd =/= false andalso
+        NodeUUID =/= false andalso
+        ns_cluster_membership:should_run_service(Config, example, node()) of
+        true ->
+
+            Spec = {example, CacheCmd, Args,
+                    [via_goport, exit_status, stderr_to_stdout,
+                     {env, build_go_env_vars(Config, example)}]},
+
+--------------------------------------
+
+
+
+     index_node_spec(Config),
+     query_node_spec(Config),
+     fts_spec(Config),
+     eventing_spec(Config),
+     cbas_spec(Config),
+     example_service_spec(Config)].
+
+index
+cbas
+eventing
+fts
+
+example
+query
+
+get_executable() ->
+
+spec,       exe                   service     RPCService
+
+indexer,     "indexer"             index       index
+cbas         "cbas"                cbas        cbas
+eventing,    "eventing-producer"   eventing    eventing     tls
+fts,         "cbft"                fts         fts          tls
+example,     "cache-service"       example     example
+'query'      "cbq-engine"          n1ql        'cbq-engine' tls
+projector    "projector"           kv          projector
+
+
+
+Why?
+    NodeUUID = binary_to_list(ns_config:uuid()),
+
+(n_0@127.0.0.1)1> ns_config:uuid().
+<<"516972984543e77dfff3e6e611bb550c">>
+(n_0@127.0.0.1)2> ns_config:search(Config, {node, node(), uuid}, false).
+* 1: variable 'Config' is unbound
+(n_0@127.0.0.1)3> ns_config:search(ns_config:latest(), {node, node(), uuid}, false).
+<<"516972984543e77dfff3e6e611bb550c">>
+
+Why?
+         "-cbasExecutable=" ++ Cmd,
+
+
+install/bin/cbbackupmgr config -a /Users/artem/work/logs/b -r backup
+
+Couchbases-MacBook-Pro-22:vulcan artem$ install/bin/cbbackupmgr backup -c 127.0.0.1:9000 -u back -p asdasd -a /Users/artem/work/logs/b -r backup --purge
+
+
+
+=========================PROGRESS REPORT=========================
+          supervisor: {local,ns_child_ports_sup}
+             started: [{pid,<0.151.0>},
+                       {id,{cbas,
+                               "/Users/artem/work/madhatter/install/bin/cbas",
+                               ["-uuid=dbeccfc373280271c5e9f41c77c962e9",
+                                "-serverAddress=127.0.0.1","-serverPort=9000",
+                                "-bindHttpAddress=127.0.0.1",
+                                "-bindHttpPort=9600","-bindAdminPort=9611",
+                                "-cbasExecutable=/Users/artem/work/madhatter/install/bin/cbas",
+                                "-debugPort=9609","-ccHttpPort=9601",
+                                "-ccClusterPort=9602","-ccClientPort=9603",
+                                "-consolePort=9604","-clusterPort=9605",
+                                "-dataPort=9606","-resultPort=9607",
+                                "-messagingPort=9608","-metadataPort=9613",
+                                "-metadataCallbackPort=9614",
+                                "-memoryQuotaMb=1721","-parentPort=9610",
+                                "-bindReplicationPort=9612","-ipv6=false",
+                                "-logDir=logs/n_0",
+                                "-dataDir=/Users/artem/work/madhatter/ns_server/data/n_0/data/@analytics",
+                                "-bindHttpsPort=19600",
+                                "-tlsCertFile=/Users/artem/work/madhatter/ns_server/data/n_0/config/memcached-cert.pem",
+                                "-tlsKeyFile=/Users/artem/work/madhatter/ns_server/data/n_0/config/memcached-key.pem"],
+                               [via_goport,exit_status,stderr_to_stdout,
+                                {log,"analytics_info.log"},
+                                {env,
+                                    [{"GOTRACEBACK","single"},
+                                     {"CBAUTH_REVRPC_URL",
+                                      <<133,90,223,37,139,107,141,207,14,
+                                        152,82,80,83,92,212,200,31,32,
+                                        128,110,112,7,130,189,24,189,181,
+                                        33,37,205,250,100>>}]}]}},
+                       {mfargs,
+                           {restartable,start_link,
+                               [{supervisor_cushion,start_link,
+                                    [cbas,5000,infinity,ns_port_server,
+                                     start_link,
+                                     [#Fun<ns_child_ports_sup.4.69815219>]]},
+                                86400000]}},
+                       {restart_type,permanent},
+                       {shutdown,infinity},
+                       {child_type,worker}]
+
+
+          supervisor: {local,ns_child_ports_sup}
+             started: [{pid,<0.132.0>},
+                       {id,{cbas,
+                               "/Users/artem/work/madhatter/install/bin/cbas",
+                               ["-serverPort=9000","-bindHttpPort=9600",
+                                "-bindAdminPort=9611","-debugPort=9609",
+                                "-ccHttpPort=9601","-ccClusterPort=9602",
+                                "-ccClientPort=9603","-consolePort=9604",
+                                "-clusterPort=9605","-dataPort=9606",
+                                "-resultPort=9607","-messagingPort=9608",
+                                "-metadataPort=9613",
+                                "-metadataCallbackPort=9614",
+                                "-parentPort=9610",
+                                "-bindReplicationPort=9612",
+                                "-bindHttpsPort=19600",
+                                "-tlsCertFile=/Users/artem/work/madhatter/ns_server/data/n_0/config/memcached-cert.pem",
+                                "-tlsKeyFile=/Users/artem/work/madhatter/ns_server/data/n_0/config/memcached-key.pem",
+                                "-uuid=9a219ecc640f0a7c639c8d95956dee0f",
+                                "-serverAddress=127.0.0.1",
+                                "-bindHttpAddress=127.0.0.1",
+                                "-cbasExecutable=/Users/artem/work/madhatter/install/bin/cbas",
+                                "-memoryQuotaMb=1762","-ipv6=false",
+                                "-logDir=logs/n_0",
+                                "-dataDir=/Users/artem/work/madhatter/ns_server/data/n_0/data/@analytics"],
+                               [via_goport,exit_status,stderr_to_stdout,
+                                [{log,"analytics_info.log"}],
+                                {env,
+                                    [{"GOTRACEBACK","single"},
+                                     {"CBAUTH_REVRPC_URL",
+                                      <<76,4,25,163,139,35,116,253,225,
+                                        154,147,169,138,36,247,149,222,
+                                        54,155,130,242,43,83,214,222,74,
+                                        55,1,119,202,193,196>>}]}]}},
+                       {mfargs,
+                           {restartable,start_link,
+                               [{supervisor_cushion,start_link,
+                                    [cbas,5000,infinity,ns_port_server,
+                                     start_link,
+                                     [#Fun<ns_child_ports_sup.4.69815219>]]},
+                                86400000]}},
+                       {restart_type,permanent},
+                       {shutdown,infinity},
+                       {child_type,worker}]
+
+
+
+
+   {{node,'n_0@127.0.0.1',ssl_rest_port},19000},
+   {{node,'n_0@127.0.0.1',xdcr_rest_port},13000},
+   {{node,'n_0@127.0.0.1',capi_port},9500},
+   {{node,'n_0@127.0.0.1',ssl_capi_port},19500},
+   {{node,'n_0@127.0.0.1',projector_port},10000},
+   {{node,'n_0@127.0.0.1',query_port},9499},
+   {{node,'n_0@127.0.0.1',ssl_query_port},19499},
+   {{node,'n_0@127.0.0.1',indexer_admin_port},9100},
+   {{node,'n_0@127.0.0.1',indexer_scan_port},9101},
+   {{node,'n_0@127.0.0.1',indexer_http_port},9102},
+   {{node,'n_0@127.0.0.1',indexer_stinit_port},9103},
+   {{node,'n_0@127.0.0.1',indexer_stcatchup_port},9104},
+   {{node,'n_0@127.0.0.1',indexer_stmaint_port},9105},
+   {{node,'n_0@127.0.0.1',indexer_https_port},19102},
+   {{node,'n_0@127.0.0.1',fts_http_port},9200},
+   {{node,'n_0@127.0.0.1',fts_ssl_port},19200},
+   {{node,'n_0@127.0.0.1',eventing_http_port},9300},
+   {{node,'n_0@127.0.0.1',eventing_debug_port},9301},
+   {{node,'n_0@127.0.0.1',eventing_https_port},19300},
+   {{node,'n_0@127.0.0.1',cbas_http_port},9600},
+   {{node,'n_0@127.0.0.1',cbas_admin_port},9611},
+   {{node,'n_0@127.0.0.1',cbas_cc_http_port},9601},
+   {{node,'n_0@127.0.0.1',cbas_ssl_port},19600},
+   {{node,'n_0@127.0.0.1',cbas_cc_cluster_port},9602},
+   {{node,'n_0@127.0.0.1',cbas_cc_client_port},9603},
+   {{node,'n_0@127.0.0.1',cbas_console_port},9604},
+   {{node,'n_0@127.0.0.1',cbas_cluster_port},9605},
+   {{node,'n_0@127.0.0.1',cbas_data_port},9606},
+   {{node,'n_0@127.0.0.1',cbas_result_port},9607},
+   {{node,'n_0@127.0.0.1',cbas_messaging_port},9608},
+   {{node,'n_0@127.0.0.1',cbas_metadata_callback_port},9614},
+   {{node,'n_0@127.0.0.1',cbas_replication_port},9612},
+   {{node,'n_0@127.0.0.1',cbas_metadata_port},9613},
+   {{node,'n_0@127.0.0.1',cbas_parent_port},9610},
+   {{node,'n_0@127.0.0.1',cbas_debug_port},9609},
+   {{node,'n_0@127.0.0.1',{project_intact,is_vulnerable}},
+
+
+   {{node,'n_0@127.0.0.1',ssl_rest_port},19000},
+   {{node,'n_0@127.0.0.1',xdcr_rest_port},13000},
+   {{node,'n_0@127.0.0.1',capi_port},9500},
+   {{node,'n_0@127.0.0.1',ssl_capi_port},19500},
+   {{node,'n_0@127.0.0.1',projector_port},10000},
+   {{node,'n_0@127.0.0.1',query_port},9499},
+   {{node,'n_0@127.0.0.1',ssl_query_port},19499},
+   {{node,'n_0@127.0.0.1',indexer_admin_port},9100},
+   {{node,'n_0@127.0.0.1',indexer_scan_port},9101},
+   {{node,'n_0@127.0.0.1',indexer_http_port},9102},
+   {{node,'n_0@127.0.0.1',indexer_stinit_port},9103},
+   {{node,'n_0@127.0.0.1',indexer_stcatchup_port},9104},
+   {{node,'n_0@127.0.0.1',indexer_stmaint_port},9105},
+   {{node,'n_0@127.0.0.1',indexer_https_port},19102},
+   {{node,'n_0@127.0.0.1',fts_http_port},9200},
+   {{node,'n_0@127.0.0.1',fts_ssl_port},19200},
+   {{node,'n_0@127.0.0.1',eventing_http_port},9300},
+   {{node,'n_0@127.0.0.1',eventing_debug_port},9301},
+   {{node,'n_0@127.0.0.1',eventing_https_port},19300},
+   {{node,'n_0@127.0.0.1',cbas_http_port},9600},
+   {{node,'n_0@127.0.0.1',cbas_admin_port},9611},
+   {{node,'n_0@127.0.0.1',cbas_cc_http_port},9601},
+   {{node,'n_0@127.0.0.1',cbas_ssl_port},19600},
+   {{node,'n_0@127.0.0.1',cbas_cc_cluster_port},9602},
+   {{node,'n_0@127.0.0.1',cbas_cc_client_port},9603},
+   {{node,'n_0@127.0.0.1',cbas_console_port},9604},
+   {{node,'n_0@127.0.0.1',cbas_cluster_port},9605},
+   {{node,'n_0@127.0.0.1',cbas_data_port},9606},
+   {{node,'n_0@127.0.0.1',cbas_result_port},9607},
+   {{node,'n_0@127.0.0.1',cbas_messaging_port},9608},
+   {{node,'n_0@127.0.0.1',cbas_metadata_callback_port},9614},
+   {{node,'n_0@127.0.0.1',cbas_replication_port},9612},
+   {{node,'n_0@127.0.0.1',cbas_metadata_port},9613},
+   {{node,'n_0@127.0.0.1',cbas_parent_port},9610},
+   {{node,'n_0@127.0.0.1',mobile_http_port},9400},
+   {{node,'n_0@127.0.0.1',mobile_https_port},19400},
+   {{node,'n_0@127.0.0.1',mobile_grpc_port},19401},
+   {{node,'n_0@127.0.0.1',{project_intact,is_vulnerable}},
+
+
+-----------------------
+
+Calculating grcp port by adding 10007 and 9000Calculated grpc port to be: 190072018/11/08 15:34:51 StartGrpcServer listening on port: 19007
+
+Why UI explicetely checks isEnterprise?

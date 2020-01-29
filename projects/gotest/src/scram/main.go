@@ -9,11 +9,19 @@ import (
 	"github.com/couchbase/goutils/scramsha"
 	"net/url"
 	"strings"
+	"time"
+	"reflect"
+	"github.com/pkg/errors"
 )
 
 
 func main() {
-	doIt()
+	tr := &http.Transport{
+		MaxIdleConns:       10,
+	}
+	client := &http.Client{Timeout: 20 * time.Second, Transport: tr}
+
+	doIt(client)
 	fmt.Println("Main: Completed.")
 }
 
@@ -31,23 +39,28 @@ func postAudit() *scramsha.Request {
 	return req
 }
 
-func doIt() {
-	client := &http.Client{}
+type stackTracer interface {
+	StackTrace() errors.StackTrace
+}
 
-	//var jsonStr = []byte(`{"bucket":"test","bucketUUID":"0"}`)
-	//req, err := http.NewRequest("GET", "http://localhost:9000/settings/web", nil)
-	//req, err := http.NewRequest("POST",
-	//	"http://localhost:9500/_pre_replicate",
-	//	bytes.NewBuffer(jsonStr))
-	//req.Header.Set("Content-Type", "application/json")
+func doIt(client *http.Client) {
 	req := postAudit()
 
 	log.Println("START")
-	res, err := scramsha.DoScramSha(req, "test", "asdasd", client)
+	res, err := scramsha.DoScramSha(req, "foobar", "asdasd", client)
+	log.Println("FIN")
+	//res, err := doBasic(req, "Administrator", "asdasd", client)
 	if err != nil {
+		if err, ok := err.(stackTracer); ok {
+			for _, f := range err.StackTrace() {
+				fmt.Printf("%+s:%d", f)
+			}
+		}
+		log.Printf("ERR %v", reflect.TypeOf(err))
 		panic(err)
 	}
 
+	log.Println("Status code : ", res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		log.Println("Wrong status code : ", res.StatusCode)
 	}

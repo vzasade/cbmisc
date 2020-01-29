@@ -1,0 +1,115 @@
+Existing API's:
+
+GET http://127.0.0.1:9000/settings/audit
+{"rotateSize":20971520,"rotateInterval":86400,"logPath":"/tmp","auditdEnabled":true}
+
+POST http://127.0.0.1:9000/settings/audit?just_validate=1
+
+auditdEnabled:true
+rotateInterval:86400
+logPath:/tmp
+
+
+data/n_0/config/audit.json
+{
+  "auditd_enabled": true,
+  "disabled": [],
+  "log_path": "logs/n_0",
+  "rotate_interval": 86400,
+  "rotate_size": 20971520,
+  "sync": [],
+  "version": 1,
+  "descriptors_path": "/Users/artem/work/vulcan/install/etc/security"
+}
+
+New fields
+{
+         "version":      2,
+         "uuid":         "uuid_string_provided_by_ns_server"
+         "auditd_enabled":       true,
+         "rotate_interval":      1440,
+         "rotate_size":          20971520,
+         "buffered":             true,
+         "log_path": "/var/lib/couchbase/logs",
+         "descriptors_path" : "/path/to/directory/containing/audit_events.json/",
+         "disabled": [],   - list of event ids (numbers) containing those events that are NOT to be outputted to the audit log.
+         "disabled_users": ["joeblogs"],
+         "sync": []
+        }
+
+/Users/artem/work/vulcan/install/etc/security/audit_events.json
+
+{
+	"version":	1,
+	"modules":	[{
+			"version":	1,
+			"module":	"n1ql",
+			"events":	[{
+					"id":	28672,
+					"name":	"SELECT statement",
+					"description":	"A N1QL SELECT statement was executed",
+					"sync":	false,
+					"enabled":	true,
+					"mandatory_fields":	{
+					"optional_fields":	{
+
+User
+{[{name, Name}, {domain, Domain}]}
+
+{disabled_users, [User]}
+
+disabled
+enabled
+
+--------------------------------------
+
+http://127.0.0.1:9000/node/controller/setupServices
+services:kv,index,fts,n1ql,eventing
+setDefaultMemQuotas:true
+["insufficient memory to satisfy memory quota for the services (requested quota is 8352MB, maximum allowed quota for the node is 8261MB)"]
+
+menelaus_web_cluster:handle_setup_services_post
+
+Svcs = [kv,index,fts,n1ql,eventing].
+[kv,index,fts,n1ql,eventing]
+
+memory_quota:default_quotas(Svcs).    
+[{eventing,256},{fts,302},{index,2264},{kv,5661}]
+
+memory_quota:this_node_memory_data().
+{9848438784,9342808064,{<0.166.0>,1114976}}
+
+
+----------------------------
+
+Memory data used to calculate default quotas {9822564352,8728973312,
+                                              {<0.7.0>,744000}}
+Memory data used to check quotas {9822564352,8728973312,{<0.7.0>,744000}}
+
+
+Memory max used to calculate default quotas 8324
+
+{kv,3740,2716,[{kv,5608}]}
+{index,1496,472,[{index,2244},{kv,5608}]}
+{fts,1197,173,[{fts,299},{index,2244},{kv,5608}]}
+{eventing,941,-83,[{eventing,256},{fts,299},{index,2244},{kv,5608}]}
+
+quotas [{eventing,256},{fts,299},{index,2244},{kv,5608}]
+
+BLAH Memory max used to check quotas {8324,8407}
+
+cf2e8301db6fa96770c2d934896609b5f239c51acf2e8301db6fa96770c2d934896609b5f239c51a
+
+2018-02-01 17:07:16,010 - root - ERROR - POST http://127.0.0.1:9000/pools/default/buckets body: bucketType=membase&threadsNumber=3&authType=sasl&replicaIndex=1&name=default&saslPassword=None&evictionPolicy=valueOnly&flushEnabled=1&replicaNumber=1&ramQuotaMB=8238 headers: {'Content-Type': 'application/x-www-form-urlencoded', 'Accept': '*/*', 'Authorization': 'Basic QWRtaW5pc3RyYXRvcjphc2Rhc2Q=\n'} error: 400 reason: unknown {"errors":{"ramQuotaMB":"RAM quota specified is too large to be provisioned into this cluster."},"summaries":{"ramSummary":{"total":11561598976,"otherBuckets":0,"nodesCount":2,"perNodeMegs":8238,"thisAlloc":17276338176,"thisUsed":0,"free":-5714739200},"hddSummary":{"total":998567632896,"otherData":748925724672,"otherBuckets":0,"thisUsed":0,"free":249641908224}}} auth: Administrator:asdasd
+
+
+1. create 2 local users: user1 and user2
+2. enable audit, save
+3. type user1/local into the window, save
+4. success and content of the window misteriosly becomes : user1/couchbase
+5. type user1/blah into the window, save
+6. you see an error: Unrecognized users: user1/blah
+7. try to correct the name, but error doesn't disappear and Save button is unclickable. you have to click elsewhere on the screen to make it enabled again
+
+I've also seen this API sending user1/local,user2/couchbase to the API when you type user1/local,user2/local, but I cannot repeat it consistently
+

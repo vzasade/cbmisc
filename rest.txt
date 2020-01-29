@@ -1,0 +1,4 @@
+Views
+----
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9500/test/_design/dev_aa/_view/aa

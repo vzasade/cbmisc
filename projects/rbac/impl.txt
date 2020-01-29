@@ -18,7 +18,7 @@ curl -v -X DELETE http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
 
 curl -v -X PUT --data "name=Ivan Ivanov&password=asdasd&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/ivanivanov
 
-curl -v -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/saslauthd/ivanivanov
+curl -v -X PUT --data "name=Ivan Ivanov&roles=admin,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/external/ivanivanov
 
 
 {permissionsVersion,126993894},
@@ -410,3 +410,898 @@ dets: http://erlang.org/doc/man/dets.html
 replicated between nodes:
 doc_replication_srv
 doc_replicator
+
+
+
+
+{
+	"users":	[{
+			"n":	"hey",
+			"plain":	"OWE3NmE4NTdhZDM5OWI0OTJiYTAxODc5ZDBmYTJkNzE3ZTQ0MzBiMg==",
+			"sha1":	{
+				"h":	"If6IA4HRWb8rUrpjkrpZr2HLIdg=",
+				"s":	"yrn4/qPenHnh4oLWkVQtaAgn/Rg=",
+				"i":	100
+			},
+			"sha256":	{
+				"h":	"Q2Wd3Guxh+mdJDGz63G2Jy7d1OyuNJfC06tqCZEs8EM=",
+				"s":	"1KDF01tbzolgMxXfvwG+C5Uv3iLzJLckaFOWetTywu0=",
+				"i":	100
+			},
+			"sha512":	{
+				"h":	"e8Th7RbEHLRke1Z8LjB+9acpHSbCgYasxISNjXE8g5llaoiT46gzEAH+wyUGxntu3Q7NO2PpKTblINMCYR731Q==",
+				"s":	"J4vp3eiDsWAkj/DNRVNaUC2jeaPKQJccyEodDib+be0KrSIniZTEKj5lIMckBrdcjLLCpzhK9P8nBHbxEqCW7g==",
+				"i":	100
+			}
+		}, {
+			"n":	"trond",
+			"plain":	"ZTVlOWZhMWJhMzFlY2QxYWU4NGY3NWNhYWE0NzRmM2E2NjNmMDVmNA==",
+			"sha1":	{
+				"h":	"nqV/dRMJqzirfqGZrqklYm5LVXg=",
+				"s":	"Y2z10Nx2z0L/aO46qazjAXJElAA=",
+				"i":	100
+			},
+			"sha256":	{
+				"h":	"qBmiiuP8PxBq2vKBP6j3gArsRU3X40XQlDbYWQrfIs8=",
+				"s":	"fozdLiszZzyxayLHP5s0iBxfLoynyYy1YkDIJtZAhZ4=",
+				"i":	100
+			},
+			"sha512":	{
+				"h":	"PHNVXDl8H6WQc11c7JIsd90RQs6VMLr1KnxBtqwEvULJJy6ggBt+hyxpaETgqMJUN8Dq7wh7yKFW5HRCUsoNrQ==",
+				"s":	"kiX1Dx5iQUAVuZROgmOkdy5I7kojafiUXG01rjN1orB9EzMwjK+y4nJpe6ONYLgXQ/mT0E3F5Bdm96VinJrNgQ==",
+				"i":	100
+			}
+		}]
+}
+
+-------------------------------------------
+
+{memcached, []},
+{{node, node(), memcached_defaults},
+{{node, node(), memcached},
+{{node, node(), memcached_config},
+
+
+curl -v -X PUT --data "name=Ivan Ivanov&password=asdasd&roles=bucket_reader[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/ivanivanov
+
+
+curl -v -X POST --data 'cluster.bucket[default].n1ql!execute' http://Administrator:asdasd@127.0.0.1:9000/pools/default/checkPermissions
+
+
+curl -v -X PUT --data "name=Ivan Ivanov&password=asdasd&roles=bucket_reader[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/ivanivanov
+
+
+curl -v -X POST --data "password=asd" http://ivanivanov:asdasd@127.0.0.1:9000/controller/changePassword
+
+
+
+{"errors":{"password":"The password must be at least six characters."}}
+
+/pools
+/pools/default
+/pools/nodes
+/poolsStreaming/default
+/pools/default/nodeServices
+/pools/default/nodeServicesStreaming
+
+
+Statement Role
+Description string
+Query-Select
+Can execute SELECT statement on bucket to retrieve data
+Query-Update
+Can execute UPDATE statement on bucket to update data
+Query-Insert
+Can execute INSERT statement on bucket to add data
+Query-Delete
+Can execute DELETE statement on bucket to delete data
+Manage-Index
+Can manage indexes for the bucket 
+Manage-Collection
+N/A for spock — No need to add this one
+System-Catalog
+Can lookup system catalog information
+
+
+
+Query-Select
+cluster.bucket[x].n1ql.select!execute
+Query-Update
+cluster.bucket[x].n1ql.update!execute
+Query-Insert
+cluster.bucket[x].n1ql.insert!execute
+Query-Delete
+cluster.bucket[x].n1ql.delete!execute
+Manage-Index
+cluster.bucket[x].n1ql.create_index!execute
+cluster.bucket[x].n1ql.alter_index!execute
+Manage-Collection
+cluster.bucket[x].n1ql.create_collection!execute
+cluster.bucket[x].n1ql.drop_collection!execute
+cluster.bucket[x].n1ql.rename_collection!execute
+System-Catalog
+cluster.bucket[x].n1ql.list_indexes!execute
+cluster.bucket[x].n1ql.list_collections!execute
+
+
+
+KV Role
+Description string
+Data-Reader
+Can read bucket data and simple stats
+Data-ReadWriter
+Can read-write bucket data and simple stats
+Data-DCPReader
+Can read DCP data streams and stats 
+Data-Backup
+Renamed
+ from Data-Restore
+Can backup and restore bucket data 
+Data-Monitoring
+Can read full bucket stats
+
+
+default_path() ->
+    filename:join(path_config:component_path(data, "config"), "users.dets").
+
+
+
+Ideas how to reduce net traffic and memory consumption:
+-------------------------------------------------------
+1. {replicate_newnodes_docs, Docs} - Use fun in place of Docs
+2. replicate_change_to_node
+   a. sync call {need_update, Id, Rev}, ignore failures
+   b. if update needed => gen_server:cast({StorageFrontend, Node}, {replicated_update, Doc}).
+   (this will throttle the updates and make sure that dups are not sent)
+
+
+
+menelaus_users:get_users
+menelaus_users:get_user_name
+menelaus_users:store_user
+menelaus_users:delete_user
+
+-export([ttt/0, spawn_user_io/0]).
+
+spawn_user_io() ->
+    erlang:spawn(
+      fun () ->
+              erlang:register(user, self()),
+              user_io_loop()
+      end).
+
+user_io_loop() ->
+    receive
+        {io_request, From, ReplyAs, Stuff} ->
+            ?log_debug("~p printed: ~p", [From, Stuff]),
+            From ! {io_reply, ReplyAs, ok},
+            user_io_loop()
+    end.
+
+ttt() ->
+    Username = "bobik",
+    Password = "asdasd",
+    MemcachedAuth = build_memcached_auth(Username, Password),
+    Auth = [{ns_server, ns_config_auth:hash_password(Password)},
+            {memcached, MemcachedAuth}],
+    Identity = {Username, builtin},
+    {Identity,
+     [{name, "Ivan Ivanov"}, {roles, [cluster_admin, {bucket_admin, [default]}]}] ++ Auth}.
+
+
+
+
+
+curl -v -X GET http://ivanivanov:asdasd@127.0.0.1:9000/whoami
+
+
+ets:test_ms({user, {blah, blah}}, [{{user, {'$1', blah}}, [], ['$1']}]).
+ets:test_ms({user, {blah, blah}}, [{{user, {'_', blah}}, [], ['$_']}]). 
+
+replicated_dets:ttt({auth, {'_', builtin}}).
+
+ttt(MatchSpec) ->
+    Fun =
+        fun(Producer) ->
+                pipes:run(Producer, pipes:collect())
+        end,
+    select(users_storage, MatchSpec, 1, Fun).
+
+
+curl -v -X PUT --data "name=Pavel&password=asdasd&roles=data_reader[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/pavel
+curl -v -X POST --data "password=qwerty" http://pavel:asdasd@127.0.0.1:9000/controller/changePassword
+
+
+curl -v -X POST http://pavel:asdasd@127.0.0.1:9000/_cbauth
+
+
+
+curl -v -X POST http://pavel:asdasd@127.0.0.1:9000/_cbauth
+{"user":"pavel","source":"saslauthd"}
+
+curl -v -X POST http://pavel:qwerty@127.0.0.1:9000/_cbauth
+{"user":"pavel","source":"builtin"}
+
+curl -v -X POST http://Administrator:asdasd@127.0.0.1:9000/_cbauth
+{"user":"Administrator","source":"admin"}
+
+curl -v -X POST http://default:@127.0.0.1:9000/_cbauth
+{"user":"default","source":"bucket"}
+
+curl -v -X POST http://:@127.0.0.1:9000/_cbauth
+{"user":"","source":"anonymous"}
+
+
+[error_logger:error,2017-02-13T14:47:43.670-08:00,n_1@127.0.0.1:error_logger<0.6.0>:ale_error_logger_handler:do_log:203]
+=========================SUPERVISOR REPORT=========================
+     Supervisor: {local,ns_server_nodes_sup}
+     Context:    start_error
+     Reason:     {shutdown,
+                     {failed_to_start_child,memcached_permissions,
+                         {{badmatch,false},
+                          [{menelaus_roles,'-compile_roles/2-fun-0-',2,
+                               [{file,"src/menelaus_roles.erl"},{line,287}]},
+                           {lists,map,2,[{file,"lists.erl"},{line,1224}]},
+                           {memcached_permissions,permissions_for_role,3,
+                               [{file,"src/memcached_permissions.erl"},
+                                {line,123}]},
+                           {memcached_permissions,permissions_for_role,4,
+                               [{file,"src/memcached_permissions.erl"},
+                                {line,132}]},
+                           {memcached_permissions,
+                               '-permissions_for_user/4-fun-0-',4,
+                               [{file,"src/memcached_permissions.erl"},
+                                {line,146}]},
+                           {lists,foldl,3,[{file,"lists.erl"},{line,1248}]},
+                           {memcached_permissions,permissions_for_user,4,
+                               [{file,"src/memcached_permissions.erl"},
+                                {line,144}]},
+                           {memcached_permissions,'-jsonify_users/3-fun-1-',
+                               6,
+                               [{file,"src/memcached_permissions.erl"},
+                                {line,197}]}]}}}
+     Offender:   [{pid,undefined},
+                  {name,ns_server_sup},
+                  {mfargs,{ns_server_sup,start_link,[]}},
+                  {restart_type,permanent},
+                  {shutdown,infinity},
+                  {child_type,supervisor}]
+
+
+    proc_lib:init_ack({ok, Pid}),
+
+    ok = write_cfg(State),
+    gen_server:enter_loop(?MODULE, [], State).
+
+
+delete_first(El, L) ->
+    {Prev, [El | Post]} = lists:splitwith(fun (El) -> false; (_) -> true end, L),
+    Prev ++ Post.
+
+
+
+ff(El,B) ->
+    L = lists:seq(1, B),
+    LN = lists:seq(1, 1000000),
+    T1 = os:timestamp(),
+    lists:foreach(fun (_) ->
+                          lists:delete(El, L)
+                  end, LN),
+    T2 = os:timestamp(),
+
+    T3 = os:timestamp(),
+    lists:foreach(fun (_) ->
+                          remove_first(El, L)
+                  end, LN),
+    T4 = os:timestamp(),
+    {timer:now_diff(T2, T1), timer:now_diff(T4, T3)}.
+
+-ifdef(EUNIT).
+
+remove_first_test() ->
+    L = [a, b, c, d, a, f],
+    ?assertEqual([b, c, d, a, f], remove_first(a, L)),
+    ?assertEqual([a, c, d, a, f], remove_first(b, L)),
+    ?assertEqual([a, b, c, d, a], remove_first(f, L)),
+    ?assertEqual([], remove_first(a, [a])).
+
+-endif.
+
+
+
+[error_logger:error,2017-02-17T14:18:21.101-08:00,n_0@127.0.0.1:error_logger<0.6.0>:ale_error_logger_handler:do_log:203]Supervisor received unexpected message: {ack,<0.210.0>,
+                                         {error,
+                                          {{badmatch,
+                                            {'EXIT',
+                                             {badarg,
+                                              [{io,format,
+                                                [user,"dets: file ~tp~s~n",
+                                                 ["/Users/artem/work/spock/ns_server/data/n_0/config/users.dets",
+                                                  " not properly closed, repairing ..."]],
+                                                []},
+                                               {dets,fopen_existing_file,2,
+                                                [{file,"dets.erl"},
+                                                 {line,2614}]},
+                                               {dets,do_open_file,4,
+                                                [{file,"dets.erl"},
+                                                 {line,2124}]},
+                                               {dets,apply_op,4,
+                                                [{file,"dets.erl"},
+                                                 {line,1466}]},
+                                               {dets,do_apply_op,4,
+                                                [{file,"dets.erl"},
+                                                 {line,1357}]},
+                                               {proc_lib,init_p_do_apply,3,
+                                                [{file,"proc_lib.erl"},
+                                                 {line,239}]}]}}},
+                                           [{replicated_dets,open,1,
+                                             [{file,"src/replicated_dets.erl"},
+                                              {line,109}]},
+                                            {replicated_dets,init_after_ack,
+                                             1,
+                                             [{file,"src/replicated_dets.erl"},
+                                              {line,105}]},
+                                            {replicated_storage,init,1,
+                                             [{file,
+                                               "src/replicated_storage.erl"},
+                                              {line,76}]},
+                                            {gen_server,init_it,6,
+                                             [{file,"gen_server.erl"},
+                                              {line,304}]},
+                                            {proc_lib,init_p_do_apply,3,
+                                             [{file,"proc_lib.erl"},
+                                              {line,239}]}]}}}
+
+
+spawn_user_io() ->
+    erlang:spawn(
+      fun () ->
+              erlang:register(user, self()),
+              user_io_loop()
+      end).
+
+user_io_loop() ->
+    receive
+        {io_request, From, ReplyAs, Stuff} ->
+            ?log_debug("~p printed: ~p", [From, Stuff]),
+            From ! {io_reply, ReplyAs, ok},
+            user_io_loop()
+    end.
+
+
+
+     {bucket_sasl, [bucket_name],
+      [],
+      [{[{bucket, bucket_name}, data], all},
+       {[{bucket, bucket_name}, views], all},
+       {[{bucket, bucket_name}], [read, flush]},
+       {[pools], [read]}]},
+
+
+AddNodeException: Error adding node: 127.0.0.1 to the cluster:127.0.0.1 - ["Prepare join failed. This server does not have sufficient memory to support requested memory quota. Total quota is 8738MB (services: kv), maximum allowed quota for the node is 8663MB."]
+
+2017-02-27 17:31:48,241 - root - ERROR - http://127.0.0.1:9000/pools/default error 400 reason: unknown {"errors":{"_":"Total quota (8738MB) exceeds the maximum allowed quota (8631MB) on node 'n_0@127.0.0.1'"}}
+
+
+upgrade_roles_spock(Definitions) ->
+    D1 = upgrade_role(Definitions,
+                      {bucket_sasl, [bucket_name],
+                       [{name, <<"Bucket Full Access">>},
+                        {desc, <<"Full access to bucket data">>}],
+                       [{[{bucket, bucket_name}, data], all},
+                        {[{bucket, bucket_name}, views], all},
+                        {[{bucket, bucket_name}], [read, flush]},
+                        {[{bucket, bucket_name}, n1ql], [execute]}
+                        {[pools], [read]}]}),
+    upgrade_role_add_permission(D1, views_admin, {[{bucket, bucket_name}, n1ql], [execute]}).
+
+upgrade_role(Definitions, {Role, _, _, _} = NewRoleDef) ->
+    lists:keyreplace(Role, 1, Definitions, NewRoleDef).
+
+upgrade_role_add_permission(Definitions, Role, Permission) ->
+    {value, {Role, Params, Info, Permissions}} =
+        lists:keysearch(Role, 1, Definitions),
+    upgrade_role(Definitions, {Role, Params, Info, [Permission | Permissions]}).
+
+
+!!! subscribe menelaus_event to user storage events
+
+
+
+
+curl -v -X POST --data "minLength=3&enforceDigits=true" http://Administrator:asdasd@127.0.0.1:9000/settings/passwordPolicy
+
+
+
+curl -v -X PUT --data "roles=query_manage_index[default]&password=asdasd" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/u1
+
+curl -v -X POST --data 'cluster.bucket[default].index!blah' http://Administrator:asdasd@127.0.0.1:9000/pools/default/checkPermissions
+
+
+curl -v -X PUT --data "name=Ivan Ivanov&password=asdasd&roles=data_reader[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/ivanivanov
+
+curl -X PUT http://localhost:9000/settings/rbac/users/builtin/kvwrite -d "name=KV Write&roles=data_reader_writer[default]&password=pwkvwrite" -u Administrator:asdasd
+
+curl -v http://localhost:9000/pools/default/buckets/default/docs/bar -d "{\"val\":\"barbar\"}" -u kvwrite:pwkvwrite
+
+
+---------------------------------------------
+
+(n_0@127.0.0.1)6> replicated_dets:get(users_storage, {auth, {"ivanivanov", builtin}}).
+{{auth,{"ivanivanov",builtin}},
+ [{ns_server,{<<193,84,50,108,206,104,221,226,11,242,112,
+                109,216,118,240,133>>,
+              <<254,143,65,16,34,29,231,50,10,6,243,244,251,23,245,
+                160,206,0,53,38>>}},
+  {memcached,{[{<<"n">>,<<"ivanivanov">>},
+               {<<"plain">>,
+                <<"0xvNVHdTs7TeVernomoGAPEuERfzcWSRQFsh3+vFxRcrsMrb">>},
+               {<<"sha1">>,
+                {[{<<"h">>,<<"Rd45oZ0RvRLLs0wBXNisJwm3gdA=">>},
+                  {<<"s">>,<<"E/IVUA1lU7qQAHK04yiQvm2hnH4=">>},
+                  {<<"i">>,4000}]}},
+               {<<"sha256">>,
+                {[{<<"h">>,
+                   <<"HFCobziL+xsX8uWW/kEZ62dOhbAk4GxwlPPVONOhQ2w=">>},
+                  {<<"s">>,<<"B2h47F/4c7pR2N7THEd9IVpvhtDvuLg+lag3QZW1lLk=">>},
+                  {<<"i">>,4000}]}},
+               {<<"sha512">>,
+                {[{<<"h">>,
+                   <<"GTgiS0Db3l7hkI7DIPVdCukjv86h0FUW/IIalvpnM+1Y"...>>},
+                  {<<"s">>,<<"yIzlsCBYa42WVnYt9M/gLosgj1ZfMrKJDvi2c6v9"...>>},
+                  {<<"i">>,4000}]}}]}}]}
+
+
+(n_0@127.0.0.1)8> ns_config_auth:get_creds(ns_config:latest(), admin).
+{"Administrator",
+ <<171,64,240,159,87,17,96,35,22,141,9,249,111,88,9,190>>,
+ <<23,73,148,195,140,50,205,202,120,115,17,174,158,215,
+   160,208,145,116,78,206>>}
+
+
+{Salt, Mac}
+
+<<MSalt/16, MMac/20>> = base64:decode(S).
+
+
+B3= <<B1/binary, B2/binary>>.
+
+-------------------------------------
+
+commit 3016b184682918202380768e73fce301777450d4
+Author: PRERNA MANAKTALA <prerna.manaktala@couchbase.com>
+Date:   Fri Feb 24 17:15:25 2017 -0800
+
+    Add create_primary_index=False to check usage of secondary indexes in rqg jobs.
+
+
+[2017-03-13 22:13:29,933] - [rest_client:1357] INFO - /diag/eval status on 127.0.0.1:9002: True content: [5,0] command: cluster_compat_mode:get_compat_version().
+[2017-03-13 22:13:30,680] - [task:121] INFO - server: ip:127.0.0.1 port:9002 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_2@127.0.0.1', 'uptime': u'570', 'mcdMemoryReserved': 13107, 'storageTotalRam': 8244, 'hostname': u'127.0.0.1:9002', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x10ddf8210>], 'moxi': 12005, 'port': u'9002', 'version': u'4.0.0r-2656-g425d55d-community', 'memcached': 12004, 'status': u'healthy', 'clusterCompatibility': 327680, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 3729629184, 'memoryTotal': 17179869184, 'memoryQuota': 5266, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+[2017-03-13 22:13:30,680] - [rest_client:904] INFO - pools/default params : memoryQuota=8738
+[2017-03-13 22:13:30,683] - [rest_client:803] ERROR - http://127.0.0.1:9002/pools/default error 400 reason: unknown {"errors":{"_":"Total quota (8738MB) exceeds the maximum allowed quota (7220MB) on node 'n_2@127.0.0.1'"}}
+
+2017-03-13 23:33:45 | INFO | MainProcess | Cluster_Thread | [rest_client.init_cluster_memoryQuota] pools/default params : memoryQuota=8738
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 783, in __bootstrap
+    self.__bootstrap_inner()
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "lib/tasks/taskmanager.py", line 31, in run
+    task.step(self)
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "lib/tasks/task.py", line 74, in step
+    self.execute(task_manager)
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "lib/tasks/task.py", line 170, in execute
+    rest.init_cluster_memoryQuota(username, password, self.quota)
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "lib/membase/api/rest_client.py", line 907, in init_cluster_memoryQuota
+    status, content, header = self._http_request(api, 'POST', params)
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] BLAH File "lib/membase/api/rest_client.py", line 803, in _http_request
+    for line in traceback.format_stack():
+2017-03-13 23:33:45 | ERROR | MainProcess | Cluster_Thread | [rest_client._http_request] POST http://127.0.0.1:9002/pools/default error 400 reason: unknown {"errors":{"_":"Total quota (8738MB) exceeds the maximum allowed quota (7004MB) on node 'n_2@127.0.0.1'"}}
+
+
+
+2017-03-13 23:33:45 | INFO | MainProcess | Cluster_Thread | [task.execute] server: ip:127.0.0.1 port:9001 ssh_username:Administrator, nodes/self: {'ip': u'127.0.0.1', 'availableStorage': [], 'rest_username': '', 'id': u'n_1@127.0.0.1', 'uptime': u'15', 'mcdMemoryReserved': 13107, 'storageTotalRam': 8032, 'hostname': u'127.0.0.1:9001', 'storage': [<membase.api.rest_client.NodeDataStorage object at 0x10c64a2d0>], 'moxi': 12003, 'port': u'9001', 'version': u'4.0.0r-2656-g425d55d-community', 'memcached': 12002, 'status': u'healthy', 'clusterCompatibility': 327680, 'curr_items': 0, 'services': [u'kv'], 'rest_password': '', 'clusterMembership': u'active', 'memoryFree': 3768037376, 'memoryTotal': 17179869184, 'memoryQuota': 4819, 'mcdMemoryAllocated': 13107, 'os': u'x86_64-apple-darwin13.4.0', 'ports': []}
+
+mcdMemoryReserved = 13107
+3107 * 2 /3 = 8738.0
+
+memoryTotal': 17179869184
+
+%% TODO: deprecate this in API
+     {mcdMemoryReserved, erlang:trunc(NodesBucketMemoryTotal)},
+
+    NodesBucketMemoryTotal = case ns_config:search_node_prop(Node,
+                                                             Config,
+                                                             memcached,
+                                                             max_size) of
+                                 X when is_integer(X) -> X;
+                                 undefined -> (MemoryTotal * 4) div (5 * ?MIB)
+                             end,
+
+
+handle_bucket_update_inner
+do_bucket_create
+
+ns_bucket
+cleanup_bucket_props(Props) ->
+    case proplists:get_value(auth_type, Props) of
+        sasl -> lists:keydelete(moxi_port, 1, Props);
+        none -> lists:keydelete(sasl_password, 1, Props)
+    end.
+
+
+----------------------------------------
+
+AuthType, Params, BucketConfig, BucketName, IsNew)
+
+create, no password
+{sasl,[{"authType","sasl"},
+                 {"autoCompactionDefined","false"},
+                 {"bucketType","membase"},
+                 {"conflictResolutionType","seqno"},
+                 {"evictionPolicy","valueOnly"},
+                 {"flushEnabled","0"},
+                 {"name",[]},
+                 {"ramQuotaMB","4575"},
+                 {"replicaIndex","0"},
+                 {"replicaNumber","1"},
+                 {"saslPassword",[]},
+                 {"threadsNumber","3"}],
+                false,[],true}
+
+
+update, moxi
+authType:none
+autoCompactionDefined:false
+evictionPolicy:valueOnly
+flushEnabled:0
+proxyPort:1234
+ramQuotaMB:4575
+replicaNumber:1
+threadsNumber:3
+
+[ns_server:debug,2017-03-23T18:15:11.646-07:00,n_0@127.0.0.1:<0.8628.0>:menelaus_web_buckets:validate_common_params:842]BLAH AUTH {sasl,[{"authType","sasl"},
+                 {"autoCompactionDefined","false"},
+                 {"evictionPolicy","valueOnly"},
+                 {"flushEnabled","0"},
+                 {"ramQuotaMB","4575"},
+                 {"replicaNumber","1"},
+                 {"saslPassword","3b5b000f5484e5fbdc3ab4e87f88215c"},
+                 {"threadsNumber","3"}],
+                [{repl_type,dcp},
+                 {uuid,<<"d51e615584b50cb8970e9e62154e2ad0">>},
+                 {num_replicas,1},
+                 {replica_index,false},
+                 {ram_quota,4797235200},
+                 {auth_type,sasl},
+                 {sasl_password,"3b5b000f5484e5fbdc3ab4e87f88215c"},
+                 {autocompaction,false},
+                 {purge_interval,undefined},
+                 {flush_enabled,false},
+                 {num_threads,3},
+                 {eviction_policy,value_only},
+                 {conflict_resolution_type,seqno},
+                 {storage_mode,couchstore},
+                 {type,membase},
+                 {num_vbuckets,8},
+                 {replication_topology,star},
+                 {servers,['n_0@127.0.0.1']},
+                 {map,[['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined]]},
+                 {map_opts_hash,133465355}],
+                "test",false}
+
+
+update, password
+BLAH AUTH {sasl,[{"authType","sasl"},
+                 {"autoCompactionDefined","false"},
+                 {"evictionPolicy","valueOnly"},
+                 {"flushEnabled","0"},
+                 {"ramQuotaMB","4575"},
+                 {"replicaNumber","1"},
+                 {"saslPassword","bobo"},
+                 {"threadsNumber","3"}],
+                [{storage_mode,couchstore},
+                 {eviction_policy,value_only},
+                 {num_threads,3},
+                 {flush_enabled,false},
+                 {purge_interval,undefined},
+                 {autocompaction,false},
+                 {moxi_port,1234},
+                 {ram_quota,4797235200},
+                 {num_replicas,1},
+                 {repl_type,dcp},
+                 {uuid,<<"d51e615584b50cb8970e9e62154e2ad0">>},
+                 {replica_index,false},
+                 {auth_type,sasl},
+                 {sasl_password,"3b5b000f5484e5fbdc3ab4e87f88215c"},
+                 {conflict_resolution_type,seqno},
+                 {type,membase},
+                 {num_vbuckets,8},
+                 {replication_topology,star},
+                 {servers,['n_0@127.0.0.1']},
+                 {map,[['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined],
+                       ['n_0@127.0.0.1',undefined]]},
+                 {map_opts_hash,133465355}],
+                "test",false}
+
+
+
+
+[2017-03-24 12:13:42,985] - [rest_client:805] ERROR - PUT http://127.0.0.1:9500//default/_design/dev_ddoc0 error 401 reason: unauthorized {"error":"unauthorized","reason":"password required"}
+ERROR
+
+[2017-03-24 12:13:43,250] - [remote_util:2506] ERROR - /
+[2017-03-24 12:13:43,250] - [remote_util:2506] ERROR - b
+[2017-03-24 12:13:43,251] - [remote_util:2506] ERROR - i
+
+
+2017-03-24 16:20:45,754] - [rest_client:814] ERROR - GET http://127.0.0.1:9500//default/_design/dev_ddoc0 body:  headers: {'Content-Type': 'application/json', 'Accept': '*/*'} error: 401 reason: unauthorized {"error":"unauthorized","reason":"password required !!!!!"} 
+[2017-03-24 16:20:45,758] - [rest_client:815] DEBUG -   File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 783, in __bootstrap
+    self.__bootstrap_inner()
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+  File "lib/tasks/taskmanager.py", line 31, in run
+    task.step(self)
+  File "lib/tasks/task.py", line 75, in step
+    self.execute(task_manager)
+  File "lib/tasks/task.py", line 2118, in execute
+    content, meta = self.rest.get_ddoc(self.bucket, self.design_doc_name)
+  File "lib/membase/api/rest_client.py", line 573, in get_ddoc
+    status, json, meta = self._get_design_doc(bucket, ddoc_name)
+  File "lib/membase/api/rest_client.py", line 683, in _get_design_doc
+    status, content, header = self._http_request(api, headers=self._create_capi_headers())
+  File "lib/membase/api/rest_client.py", line 815, in _http_request
+    log.debug(''.join(traceback.format_stack()))
+
+[2017-03-24 16:20:45,764] - [rest_client:814] ERROR - PUT http://127.0.0.1:9500//default/_design/dev_ddoc0 body: {"views": {"views0": {"map": "function (doc) { emit(doc.age, doc.first_name);}"}}} headers: {'Content-Type': 'application/json', 'Accept': '*/*', 'Authorization': 'Basic ZGVmYXVsdDo=\n'} error: 401 reason: unauthorized {"error":"unauthorized","reason":"password required !!!!!"} auth: default:
+[2017-03-24 16:20:45,764] - [rest_client:815] DEBUG -   File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 783, in __bootstrap
+    self.__bootstrap_inner()
+  File "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/threading.py", line 810, in __bootstrap_inner
+    self.run()
+  File "lib/tasks/taskmanager.py", line 31, in run
+    task.step(self)
+  File "lib/tasks/task.py", line 75, in step
+    self.execute(task_manager)
+  File "lib/tasks/task.py", line 2146, in execute
+    self.rest.create_design_document(self.bucket, ddoc)
+  File "lib/membase/api/rest_client.py", line 486, in create_design_document
+    username=bucket.name, password=bucket.saslPassword))
+  File "lib/membase/api/rest_client.py", line 815, in _http_request
+    log.debug(''.join(traceback.format_stack()))
+
+
+[ns_server:error,2017-03-24T16:35:22.358-07:00,n_0@127.0.0.1:<0.803.0>:menelaus_auth:verify_rest_auth_on_ns_server:323]BLAH OTHER {{[],anonymous},{[{bucket,"default"},views],read},auth_failure}
+
+
+curl -v -X PUT --data "password=&roles=bucket_sasl[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/builtin/default
+
+
+-----------------------------
+
+memcached_permissions.erl
+menelaus_auth.erl
+menelaus_roles.erl
+menelaus_users.erl
+menelaus_web_rbac.erl
+ns_config_auth.erl
+
+
+PUT
+http://127.0.0.1:9000/couchBase/test/_design/dev_aa
+{"views":{"dd":{"map":"function (doc, meta) {\n  emit(meta.id, null);\n}"}}}
+
+
+GET
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9000/pools/default/buckets/test/ddocs
+
+Content-Type:application/json;charset=UTF-8
+
+
+curl -v -X PUT -H "Content-Type: application/json" --data '{"views":{"dd":{"map":"function (doc, meta) {emit(meta.id, null);}"}}}' http://Administrator:asdasd@127.0.0.1:9000/couchBase/test/_design/dev_aa
+
+
+Stack trace: [{couch_db,validate_ddoc,1,
+                        [{file,"/Users/artem/work/spock/couchdb/src/couchdb/couch_db.erl"},
+                         {line,736}]},
+              {couch_db,'-update_docs/3-fun-0-',2,
+                        [{file,"/Users/artem/work/spock/couchdb/src/couchdb/couch_db.erl"},
+                         {line,472}]},
+              {lists,foldl,3,[{file,"lists.erl"},{line,1248}]},
+              {couch_db,update_docs,3,
+                        [{file,"/Users/artem/work/spock/couchdb/src/couchdb/couch_db.erl"},
+                         {line,466}]},
+              {capi_ddoc_manager,do_save_doc_with_bucket,2,
+                                 [{file,"src/capi_ddoc_manager.erl"},
+                                  {line,255}]},
+              {capi_ddoc_manager,do_save_doc,2,
+                                 [{file,"src/capi_ddoc_manager.erl"},
+                                  {line,240}]},
+              {capi_ddoc_manager,save_doc,2,
+                                 [{file,"src/capi_ddoc_manager.erl"},
+                                  {line,170}]},
+              {replicated_storage,handle_call,3,
+                                  [{file,"src/replicated_storage.erl"},
+                                   {line,113}]}]
+
+
+
+PUT
+{"error":"not_found","reason":"no_couchbase_bucket_exists"}
+
+GET
+{"error":"no_ddocs_service"}
+
+
+handle_ddocs_list(PoolId, BucketName, Req) ->
+    FoundBucket = lists:member(node(), ns_bucket:bucket_view_nodes(BucketName)),
+    case FoundBucket of
+        true ->
+            do_handle_ddocs_list(PoolId, BucketName, Req);
+        _ ->
+            reply_json(Req, {struct, [{error, no_ddocs_service}]}, 400)
+    end.
+
+verify_bucket_auth(#httpd{method = Method,
+                          path_parts=[_DbName | RestPathParts],
+                          mochi_req = MochiReq},
+                   BucketName) ->
+    ListBucketName = ?b2l(BucketName),
+    Permission = get_required_permission(Method, ListBucketName, RestPathParts),
+
+    case ns_bucket:get_bucket(ListBucketName) of
+        not_present ->
+            {not_found, missing};
+        {ok, BucketConfig} ->
+            case menelaus_auth:verify_rest_auth(MochiReq, Permission) of
+                {allowed, _} ->
+                    case couch_util:get_value(type, BucketConfig) =:= membase of
+                        true ->
+                            {allowed, BucketConfig};
+                        _ ->
+                            {not_found, no_couchbase_bucket_exists}
+                    end;
+                forbidden ->
+                    {forbidden, Permission};
+                auth_failure ->
+                    auth_failure
+            end
+    end.
+
+
+Service views not running on this node
+
+
+curl -v -X PUT -H "Content-Type: application/json" --data '{"views":{"dd":{"map":"function (doc, meta) {emit(meta.id, null);}"}}}' http://Administrator:asdasd@127.0.0.1:9500/test/_design/dev_aa
+
+
+{"error":"no_active_vbuckets","reason":"Cannot execute view query since the node has no active vbuckets"}
+
+
+curl -v -X POST --data 'diasableUIOverHttp=false' http://Administrator:asdasd@127.0.0.1:9000/settings/security
+
+GET http://Administrator:asdasd@127.0.0.1:9000/settings/security
+
+
+Attention: 2017-04-13 16:36:56 127.0.0.1:MCResponse status=EACCESS, opcode=0x89, opaque=0, msg: No access
+Attention: 2017-04-13 16:37:06 127.0.0.1:TopoChangeDet:unexpected status code, 403, in _pre_replicate response
+
+{'POST',"test",[],{[{bucket,"test"},data,docs],write}}
+
+
+goproj/src/github.com/couchbase/goxdcr/replication_manager/adminport.go
+godeps/src/github.com/couchbase/goutils/go-cbaudit/audit_service.go:232
+
+(if creds.Domain() == "anonymous" {)
+goproj/src/github.com/couchbase/cbft/rest_auth.go
+
+
+--------------------------------------------------
+
+BACKUP
+./cbbackupmgr config -a /tmp/backup -r repo --include-buckets beer-sample,travel-sample
+./cbbackupmgr backup -a /tmp/backup -r repo -c 127.0.0.1:9000 -u mikewied -p password
+./cbbackupmgr restore -a /tmp/backup -r repo -c 127.0.0.1:9000 -u mikewied -p password
+
+Look in /tmp/backup/logs/backup.log for the log file. I’m printing the missing permissions, but not the URL to the command line. You can easily see the url and error message in the logs though.
+
+
+
+../install/bin/cbbackupmgr config -a /Users/artem/work/spock/ns_server/backup -r repo --include-buckets beer-sample,travel-sample
+
+../install/bin/cbbackupmgr backup -a /Users/artem/work/spock/ns_server/backup -r repo  -c 127.0.0.1:9000 -u backup -p asdasd --purge
+
+../install/bin/cbbackupmgr restore -a /Users/artem/work/spock/ns_server/backup -r repo  -c 127.0.0.1:9000 -u backup -p asdasd
+
+
+The location of gosecrets on customer nodes is:
+/opt/couchbase/bin/gosecrets
+
+Linux 2.6.32-696.el6.x86_64
+
+
+curl -v -X PUT --data "password=asdasd&roles=blah,bucket_admin[default]" http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users/local/ivanivanov
+
+
+2017-05-06T03:52:55.950839+08:00] Memcached logs (['sh', '-c', 'cd "$1"; for file in $(ls -tr memcached.log.*); do cat "$file"; done', '--', 'logs/n_0']) - OK
+
+
+GET /diag
+diag_handler:handle_diag
+
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9000/settings/rbac/users
+
+
+--------------------------------------------------------------------
+
+cache entry point: verify_rest_auth
+do not cache external users
+do not cache tokens
+
+
+
+SecurityManagement
+
+
+refresh_isasl
+refresh_ssl_certs
+refresh_rbac(
+
+
+[ns_server:debug,2017-05-22T18:23:38.964-07:00,n_1@127.0.0.1:memcached_passwords<0.245.0>:memcached_passwords:refresh:169]BLAH DO REFRESH
+[ns_server:debug,2017-05-22T18:23:38.964-07:00,n_1@127.0.0.1:memcached_passwords<0.245.0>:ns_memcached:connect_and_send_isasl_refresh:1156]BLAH REFRESH {"@ns_server","5c3441ab36d3556f99e7f6c56d846b07"}
+[ns_server:debug,2017-05-22T18:23:39.138-07:00,n_0@127.0.0.1:memcached_passwords<0.245.0>:memcached_passwords:make_producer:106]BLAH PROD {"@ns_server","19965651ba21bc25be3c7c257f65446a"}
+
+
+BLAH REFRESH {"@ns_server","19965651ba21bc25be3c7c257f65446a"}
+
+
+--------------------------------------------------------------------
+
+Views:
+
+http://127.0.0.1:9000/couchBase/test/_design/aa/_view/aa?connection_timeout=60000&inclusive_end=true&limit=6&skip=0&stale=false
+
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9000/couchBase/test/_design/aa/_view/aa
+
+
+curl -v -X GET http://test:asdasd@127.0.0.1:9000/couchBase/test/_design/aa/_view/aa
+curl -v -X GET http://test:asdasd@127.0.0.1:9500/test/_design/aa/_view/aa
+
+cluster.bucket[test].views!read
+
+
+POST http://127.0.0.1:9000/pools/default/buckets/test/docs/a2
+
+flags=33554438&value=%7B%0A%20%20%22a%22%3A%20%22a%22%0A%7D
+
+DELETE
+http://127.0.0.1:9000/pools/default/buckets/test/docs/a2
+
+
+curl -v -X GET http://Administrator:asdasd@127.0.0.1:9500/test/docs/a2
+
+
+--------------------------------------------------------
+
+2017-06-13 18:39:23 | INFO | MainProcess | Cluster_Thread | [rest_client.create_bucket] 0.00 seconds to create bucket default
+2017-06-13 18:39:23 | INFO | MainProcess | Cluster_Thread | [bucket_helper.wait_for_memcached] waiting for memcached bucket : default in 127.0.0.1 to accept set ops
+2017-06-13 18:39:23 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] read 0 vbuckets
+2017-06-13 18:39:23 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] stats:{u'diskUsed': 0, u'memUsed': 0, u'vbActiveNumNonResident': 0, u'diskFetches': 0, u'quotaPercentUsed': 0, u'opsPerSec': 0, u'dataUsed': 0, u'itemCount': 0, u'storageTotals': {u'hdd': {u'free': 264620422718, u'total': 499283816448, u'quotaTotal': 499283816448, u'usedByData': 0, u'used': 234663393730}, u'ram': {u'used': 11554177024, u'quotaUsed': 4581228544, u'quotaUsedPerNode': 4581228544, u'quotaTotalPerNode': 4581228544, u'total': 12861341696, u'quotaTotal': 4581228544, u'usedByData': 0}}}
+2017-06-13 18:39:24 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] read 0 vbuckets
+2017-06-13 18:39:24 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] stats:{u'diskUsed': 0, u'memUsed': 0, u'vbActiveNumNonResident': 0, u'diskFetches': 0, u'quotaPercentUsed': 0, u'opsPerSec': 0, u'dataUsed': 0, u'itemCount': 0, u'storageTotals': {u'hdd': {u'free': 264620422718, u'total': 499283816448, u'quotaTotal': 499283816448, u'usedByData': 0, u'used': 234663393730}, u'ram': {u'used': 11554177024, u'quotaUsed': 4581228544, u'quotaUsedPerNode': 4581228544, u'quotaTotalPerNode': 4581228544, u'total': 12861341696, u'quotaTotal': 4581228544, u'usedByData': 0}}}
+2017-06-13 18:39:24 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] read 8 vbuckets
+2017-06-13 18:39:24 | DEBUG | MainProcess | Cluster_Thread | [rest_client.parse_get_bucket_json] stats:{u'diskUsed': 0, u'memUsed': 0, u'vbActiveNumNonResident': 0, u'diskFetches': 0, u'quotaPercentUsed': 0, u'opsPerSec': 0, u'dataUsed': 0, u'itemCount': 0, u'storageTotals': {u'hdd': {u'free': 264620422718, u'total': 499283816448, u'quotaTotal': 499283816448, u'usedByData': 0, u'used': 234663393730}, u'ram': {u'used': 11554177024, u'quotaUsed': 4581228544, u'quotaUsedPerNode': 4581228544, u'quotaTotalPerNode': 4581228544, u'total': 12861341696, u'quotaTotal': 4581228544, u'usedByData': 0}}}

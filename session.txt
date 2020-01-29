@@ -1,0 +1,44 @@
+pools/default
+
+handle_pool_info_wait_tail
+
+reply_ok(Req, "application/json", menelaus_util:encode_json(Info),
+             menelaus_auth:maybe_refresh_token(Req)),
+
+-spec maybe_refresh_token(mochiweb_request()) -> [{string(), string()}].
+maybe_refresh_token(Req) ->
+    case menelaus_auth:extract_auth(Req) of
+        {token, Token} ->
+            case menelaus_ui_auth:maybe_refresh(Token) of
+                nothing ->
+                    [];
+                {new_token, NewToken} ->
+                    [generate_auth_cookie(Req, NewToken)]
+            end;
+        _ ->
+            []
+    end.
+
+
+-spec generate_auth_cookie(mochiweb_request(), auth_token()) -> {string(), string()}.
+generate_auth_cookie(Req, Token) ->
+    Options = [{path, "/"}, {http_only, true}],
+    SslOptions = case Req:get(socket) of
+                     {ssl, _} -> [{secure, true}];
+                     _ -> ""
+                 end,
+    mochiweb_cookies:cookie(ui_auth_cookie_name(Req), Token, Options ++ SslOptions).
+
+
+--------------------------------------------------------------
+
+
+menelaus_auth:verify_rest_auth
+
+
+happens for each request
+log_web_hit
+
+get_token(Req)
+
+    ExpirationSeconds = ns_config:read_key_fast(ui_session_expiration_seconds, UI_AUTH_EXPIRATION_SECONDS
