@@ -1,0 +1,7 @@
+Sherlock 4.0
+Watson 4.5
+Spock 5.0
+Vulcan 5.5
+Alice 6.0
+MadHatter 6.5
+CheshireCat 7.0
