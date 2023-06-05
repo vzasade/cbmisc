@@ -109,3 +109,6 @@ http://172.23.120.24/builds/latestbuilds/couchbase-server/mad-hatter/
 #init new repo
 repo init -u git://github.com/couchbase/manifest.git -g all -m branch-master.xml
 repo sync
+
+#git look for the certain word in diff
+SEARCH=TestBucketsAuth && git log -S$SEARCH --stat -p cbauth_test.go | sed -n "/commit/,/diff/p; /$SEARCH/p"
