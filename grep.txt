@@ -1,0 +1,67 @@
+create graph of /pools/default/buckets per second
+-------------------------------------------------
+
+grep "/pools/default/buckets[ \?]" ns_server.http_access.log | grep -o "2./Nov/2021:..:..:.." | uniq -c | tr -s ' ' | tr ' ' , > pools.default.buckets.csv
+
+requests per day
+----------------
+
+$ for date in {22..26}; do echo "${date}/Nov"; egrep -ic "${date}/Nov.*GET /pools/default/buckets" ns_server.http_access_internal.log; done;
+22/Nov 399457
+23/Nov 393143
+24/Nov 417897
+25/Nov 454461
+26/Nov 409893
+
+requests per user
+-----------------
+
+$ for date in {23..26}; do echo "${date}/Nov"; egrep -io " - .*?${date}/Nov" ns_server.http_access_internal.log | sort | uniq -c; done;
+
+requests for 10 sec for user:
+-----------------------------
+grep "/pools/default/buckets[ \?]" ns_server.http_access_internal.log | grep couchbase_read_prod | grep -o "26/Nov/2021:13:1." | uniq -c
+
+
+finding unfinished vbuckets for rebalance
+-----------------------------------------
+
+cat graceful.log | grep "ns_rebalance_observer:handle_master_event" | gawk 'match($0, /vbucket ([0-9]+)/, arr) { print arr[1]}' | sort | uniq -c | sort
+
+finding unfinished waits for data move
+--------------------------------------
+
+cat graceful.log | grep "vbucket_mover" | grep "wait_dcp_data_move" | gawk 'match($0, /partition ([0-9]+)/, arr) { print arr[1]}' |  sort | uniq -c | sort
+
+finding those who waits for index being updated
+-----------------------------------------------
+
+cat graceful.log | grep "wait_index_updated" | gawk 'match($0, /vbucket ([0-9]+)/, arr) { print arr[1]}' > wait1.log
+cat graceful.log | grep "Index is updated on new master" | gawk 'match($0, /partition ([0-9]+)/, arr) { print arr[1]}' > wait2.log
+cat wait1.log wait2.log | sort | uniq -c | sort
+
+
+
+cat graceful.log | grep "janitor_agent:get_vbucket_high_seqno" | gawk 'match($0, /vbucket ([0-9]+)/, arr) { print arr[1]}' > wait1.log
+cat graceful.log | grep "persistence of high sequence number" | gawk 'match($0, /vBucket ([0-9]+)/, arr) { print arr[1]}' > wait2.log
+cat wait1.log wait2.log | sort | uniq -c | sort
+
+
+number of cbq-engine requests from ss command
+---------------------------------------------
+
+Extended socket statistics
+ss -an --info --processes --memory --options
+
+grep -E "^tcp.*ESTAB.*8091\s*users" couchbase.log  | grep cbq-engine | wc -l
+
+number of cbq-engine requests from netstat command
+---------------------------------------------
+
+Destrier:121 artem$ cat couchbase.log | egrep "^tcp" | grep ESTABLISHED | grep cbq-engine | grep 127.0.0.1:8091 | wc -l
+    2044
+
+
+lowest free memory in stats.log
+-------------------------------
+cat ns_server.stats.log | grep  {free_memory, | gawk 'match($0, /{free_memory,([0-9]+)/, arr) {print arr[1]}' | sort -g

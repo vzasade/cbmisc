@@ -1,0 +1,1 @@
+~/work/promtimer/bin/promtimer --grafana-home /usr/local/Cellar/grafana/8.3.3/share/grafana --prometheus /Users/artem/work/neo/install/bin/prometheus

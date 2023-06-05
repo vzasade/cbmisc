@@ -1,0 +1,876 @@
+yesTopology aware services:
+[fts,index,cbas,eventing,backup]
+
+Simple services:
+[n1ql]
+
+Service map before rebalance:
+(n_0@192.168.0.6)1> ns_cluster_membership:get_service_map(ns_cluster_membership:get_snapshot(), index).
+[]
+
+Service map after rebalance:
+(n_0@192.168.0.6)2> ns_cluster_membership:get_service_map(ns_cluster_membership:get_snapshot(), index).
+['n_1@127.0.0.1','n_2@127.0.0.1']
+
+
+ActiveNodes = ns_cluster_membership:get_service_map(Snapshot, Service),
+
+              {Pid, MRef} = service_rebalancer:spawn_monitor_rebalance(
+                              Service, KeepNodes,
+                              EjectNodes, DeltaNodes, ProgressCallback),
+
+
+service_rebalancer -
+0. waits for agents (service_agent process started on node)
+1. gets infos from all nodes (Eject + Keep)
+2. calls service_agent:prepare_rebalance on all nodes
+3. picks a leader among the KeepNodes
+4. calls service_agent:start_rebalance on leader
+5. waits for rebalance completion
+
+service_api:get_node_info(Conn)
+
+[ns_server:debug,2021-07-08T10:59:58.658-07:00,n_0@192.168.0.6:service_rebalancer-index-worker<0.6357.0>:service_rebalancer:rebalance_worker:153]Got node infos:
+[{'n_1@127.0.0.1',[{node_id,<<"9533a6495920ef00dafb8ad6c0c04fbf">>},
+                   {priority,5},
+                   {opaque,null}]},
+ {'n_2@127.0.0.1',[{node_id,<<"a1fb475ca6fb232308ddf36fd05829c9">>},
+                   {priority,5},
+                   {opaque,null}]}]
+
+
+
+Service API is in service_api.erl
+
+Shutdown
+GetNodeInfo
+GetTaskList
+CancelTask
+GetCurrentTopology
+PrepareTopologyChange
+StartTopologyChange
+
+We keep json RPC connection with service and send ServiceAPI.<ApiName> + Arg and waiting for the result
+
+Interface for services:
+~/work/neo/goproj/src/github.com/couchbase/cbauth/service/interface.go
+
+
+GetCurrentTopology returns:
+
+type Topology struct {
+	Rev   Revision `json:"rev"`
+	Nodes []NodeID `json:"nodes"`
+
+	IsBalanced bool     `json:"isBalanced"`
+	Messages   []string `json:"messages,omitempty"`
+}
+
+(Options = [] | [durability_aware])
+failover(Nodes, Options) ->
+    not proplists:is_defined(quorum_failover, Options) orelse
+        failover_collections(),
+    KVNodes = ns_cluster_membership:service_nodes(Nodes, kv),
+    lists:umerge([failover_buckets(KVNodes, Options),
+                  failover_services(Nodes)]).
+
+
+failover:failover_services(Nodes)
+failover:failover_service
+service_janitor:complete_service_failover
+service_janitor:complete_topology_aware_service_failover
+service_janitor:orchestrate_service_failover(Service, Nodes)
+service_rebalancer:spawn_monitor_failover(Service, Nodes),
+
+
+auto_failover_logic:should_failover_node
+1. get node services
+    Just one: should_failover_service
+    Many: should_failover_colocated_node
+               If kv is there => should_failover_service(kv)
+               else => lists:all(should_failover_service(S), Services)
+
+
+should_failover_service
+1. enabled?
+2. cluster has enough nodes (SvcNodeCount >= service_failover_min_node_count(Service))
+
+
+
+ns_orchestrator:try_autofailover(Nodes)
+ns_rebalancer:validate_autofailover(Nodes)
+
+
+Current state of things:
+1. If the node is unhealthy and doesn't have kv on it: it might be automatically failed over only if all the services that reside on such node are also present on other nodes
+1. If the node is unhealthy and has kv on it: it might be automatically failed over if all the partitions on this node have replicas elsewhere. The services will be failed over even if no other nodes with such services exist.
+
+
+Idea:
+Failover each service independently, regardless of other services residing on the node
+Pass "automatic" flag to PrepareRebalance method of ServiceAPI, so service knows that failover is automatic and error out if it thinks that automatic failover is unsafe
+
+Counting failovers:
+1. Failover event: failover of at least one service on the node had succeded
+2. Failover event advances auto failover counter
+
+Questions:
+1. Proper status for partially failed over node? active?
+2. How to increment global autofailover counter?
+3. What if kv is healthy on the node but index is not. Should we just fail over index?
+
+
+
+{delete, Key, CollectionsUid, VBucket}
+{set, Key, CollectionsUid, VBucket, Val, Flags}
+{add, Key, CollectionsUid, VBucket, Val}
+{get, Key, CollectionsUid, VBucket}
+{get_from_replica, Key, CollectionsUid, VBucket}
+
+----------------------------------------------------------------
+
+ns_server_sup ->
+   health_monitor_sup ->
+      ns_server_monitor
+      service_monitor_children_sup ->
+         kv - dcp_traffic_monitor
+         kv - kv_stats_monitor
+         kv - kv_monitor
+      service_monitor_worker
+      node_monitor
+      node_status_analyzer
+
+
+Monitors:
+ns_server_monitor
+dcp_traffic_monitor
+kv_monitor
+node_monitor
+node_status_analyzer
+
+kv_stats_monitor - is not a monitor!!!!!!! - called from kv_monitor
+
+
+
+
+health_monitor - base class
+
+nodes - dict({Node, Status})
+
+node_monitor - collects statuses from all local monitors and sends them to master node_monitor
+
+
+ns_server_monitor - sends heartbeats to all ns_server_monitor's in cluster
+node_monitor - sends heartbeats to node_monitor on mb_master
+
+!!!! I don't see any good reason why node_status_analyzer should be a separate server and not a part of node_monitor:analyze_status fun
+
+!!!! Looks like dcp_traffic_monitor doesn't benefit much from being derived from health_monitor
+
+is_node_down - node is down if at least one monitor thinks that it's down
+
+
+keeps list of nodes_wanted and nodes statuses
+
+
+
+auto_failover - singleton run on orchestrator
+
+does periodic ticks
+tick
+
+
+ns_config:search(Config, auto_failover_cfg)
+
+{node, Node, uuid}
+
+1. Gets all active nodes
+
+
+Down grace period:
+http://review.couchbase.org/c/ns_server/+/13603/
+
+
+process_frame
+get_down_states
+increment_down_state nearly_down -> failover (only if there are just one single down node)
+
+New logic:
+increment nearly_down counter only if (nearly_down) on all down nodes
+reset nearly_down counter to 0 for all nearly_down nodes if there is extra down node
+reset nearly_down counter to 0 for all nearly_down nodes if there are too many down nodes
+switch all nodes to failover if (nearly_down, counter = 2) for all down nodes 
+
+
+
+[{"cluster.query.collection[default:MyScope:.].collections!read",
+       {[query,{collection,["default","MyScope",any]},collections],read}}]
+
+
+menelaus_roles:is_allowed({[query,{collection,["default","MyScope",any]},collections],read}, {"queryuser", local}).
+
+menelaus_roles:get_compiled_roles({"queryuser", local}).
+
+(n_0@127.0.0.1)2> menelaus_roles:get_compiled_roles({"queryuser", local}).
+[[{[{collection,["default","MyScope",any]},n1ql,udf],
+   [manage]},
+  {[{collection,["default","MyScope",any]},collections],
+   [read]},
+  {[ui],[read]},
+  {[pools],[read]}]]
+
+
+
+[ns_server:info,2021-08-17T15:43:18.242-07:00,nonode@nohost:dist_manager<0.191.0>:dist_manager:bringup:253]Attempting to bring up net_kernel with name 'n_2@cb.local'
+
+[ns_server:info,2021-08-17T15:58:30.545-07:00,nonode@nohost:<0.6055.0>:dist_manager:bringup:253]Attempting to bring up net_kernel with name 'n_2@::1'
+
+
+[chronicle:debug,2021-08-18T12:14:53.884-07:00,n_2@cb.local:chronicle_agent<0.224.0>:chronicle_agent:handle_provision:1199]Provisioning with history <<"ac44b2366c771e6ba1141ef036bb7548">>. Config:
+
+2021-08-18T12:59:23.599-07:00
+
+[ns_server:info,2021-08-18T12:14:53.295-07:00,nonode@nohost:dist_manager<0.191.0>:dist_manager:bringup:253]Attempting to bring up net_kernel with name 'n_2@cb.local'
+[ns_server:info,2021-08-18T12:59:23.226-07:00,nonode@nohost:<0.27445.2>:dist_manager:bringup:253]Attempting to bring up net_kernel with name 'n_2@::1'
+[ns_server:info,2021-08-18T12:59:24.067-07:00,nonode@nohost:dist_manager<0.27611.2>:dist_manager:bringup:253]Attempting to bring up net_kernel with name 'n_2@::1'
+
+
+
+
+{conflict
+
+
+
+
+MB-12739: Support for server group auto-failover.
+    
+    Implementation of the core logic for server group auto-failover:
+    1. Checks for numerous conditions to detect that a server group is down.
+    2. New state machine for a down server group (down_group_state):
+        - The down nodes in the group go thru the same state transitions as
+          before.
+        - Once all down nodes are in "nearly_down" or "failover" state, then
+          down_group_state is set to "nearly_down" and its counter set to 0.
+        - The counter for the down_group_state is incremented on every tick.
+        - When the counter is greater than or equal to DOWN_GRACE_PERIOD, then
+          down_group_state is set to "failover".
+        - If at any point during the above state transitions, if one or more nodes
+          in the server group come up, then down_group_state is cleared.
+    3. When down_group_state advances to "failover", then it checks whether nodes
+       in the down group can be failed over and attempts to failover those it can.
+
+
+
+1. Advance down node through half_down states up to nearly_down
+2. Increment nearly_down counter only if all down nodes are in nearly_down state
+3. Reset nearly_down and failover nodes to nearly_down with down_counter = 0 if the list of down nodes changes
+4. When all currently down nodes are in failover state, then we check if the nodes can be failed over and attempt to failover those we can.
+
+Down warning will be issued if during the tick node is nearly_down and there is at least one half down node
+
+
+
+    {{Actions, NewDownStates}, NewState} =
+        case WithGroupFailover of
+            true ->
+                DownSGState = get_down_sg_state(
+                                DownStates, DownSG,
+                                State#state.down_server_group_state),
+                {process_with_group_failover(DownStates, State, SvcConfig,
+                                             DownSGState),
+                 State#state{down_server_group_state = DownSGState}};
+            false ->
+                {process_node_down(DownStates, State, SvcConfig), State}
+        end,
+
+    NodeStates = lists:umerge(UpStates, NewDownStates),
+    SvcS = update_multi_services_state(Actions, NewState#state.services_state),
+
+    case Actions of
+        [] ->
+            ok;
+        _ ->
+            ?log_debug("Decided on following actions: ~p", [Actions])
+    end,
+    {Actions, State#state{nodes_states = NodeStates, services_state = SvcS}}.
+
+    
+
+
+--------------------------------------------
+
+
+5: []
+{state,[],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+4: []
+[{node_state,{a,<<"a">>},0,up,false},
+ {node_state,{b,<<"b">>},0,half_down,false},
+ {node_state,{c,<<"c">>},0,up,false}]
+3: []
+[{node_state,{b,<<"b">>},1,half_down,false}]
+2: []
+[{node_state,{b,<<"b">>},2,half_down,false}]
+1: []
+[{node_state,{b,<<"b">>},0,nearly_down,false}]
+0: []
+[{node_state,{b,<<"b">>},1,nearly_down,false}]
+
+1: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},1,nearly_down,false},
+        {node_state,{c,<<"c">>},0,up,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+0: [{mail_down_warning,{b,<<"b">>}}]
+[{node_state,{b,<<"b">>},0,nearly_down,true},
+ {node_state,{c,<<"c">>},0,half_down,false}]
+
+2: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},0,nearly_down,true},
+        {node_state,{c,<<"c">>},0,half_down,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+1: []
+[{node_state,{b,<<"b">>},1,nearly_down,true},
+ {node_state,{c,<<"c">>},0,up,false}]
+0: [{failover,{b,<<"b">>}}]
+[{node_state,{b,<<"b">>},1,failover,true}]
+
+1: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},1,failover,true},
+        {node_state,{c,<<"c">>},0,up,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+0: []
+[{node_state,{b,<<"b">>},0,nearly_down,true},
+ {node_state,{c,<<"c">>},0,half_down,false}]
+
+1: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},0,nearly_down,true},
+        {node_state,{c,<<"c">>},0,half_down,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+0: []
+[{node_state,{b,<<"b">>},1,nearly_down,true},
+ {node_state,{c,<<"c">>},0,up,false}]
+
+
+
+2: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},0,nearly_down,true},
+        {node_state,{c,<<"c">>},0,half_down,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+1: []
+[{node_state,{b,<<"b">>},1,nearly_down,true},
+ {node_state,{c,<<"c">>},0,up,false}]
+0: [{failover,{b,<<"b">>}}]
+[{node_state,{b,<<"b">>},1,failover,true}]
+
+
+kv_stats_monitor
+Auto-failover for sustained data disk read/write failures after 120 seconds
+
+config key:
+failover_on_data_disk_issues
+
+getter:
+get_failover_on_disk_issues
+
+stored in kv_stats_monitor:
+numSamples
+
+check_for_disk_issues(Buckets, TS, Stats, NumSamples)
+
+http://review.couchbase.org/c/ns_server/+/84805/
+
+Q:
+Do I understand this correctly:
+If TimePeriod = 100sec and 50 of them have 2 failures happen, and other 50 have 0 failures happen during the second, then despite 100 failures happening in 100 sec, which is > 60, it won't trigger the failover.
+
+A:
+Yes, since we are looking for sustained failure, we are not interested in the value of the stat itself but rather the number of samples where the stat has increased. The threshold is for the number of samples.
+
+A timePeriod of 100s has 100 stat samples (one per second). If 60 of those samples show an increment over the previous sample then that is considered a sustained failure.
+
+ EP engine retry policy for write failure is to retry the write every second and indefinitely. As long as the disk failure continues to exist, the ep_item_commit_failed (or the ep_data_write_failed) stat will continue to increase. This is irrespective of whether the client continues to perform writes or not. As a result, more or less every sample of the write related failure stats should show an increment over the previous one.
+EP engine's retry policy for reads is different. They do not retry reads on read failure. The ep_data_read_failed stat will continue to increase as long as the client is performing read ops and the disk failure continues to exist.
+
+I think we need this explanation in the module header.
+
+If ep-engine retries each second and we sample once per second, it's quite probable that we can register 2 failures in one second and 0 in the next one. It seems to me that if one bit will represent 2 seconds interval, it will be more reliable.
+
+I had also thought of scenario where two failures get registered in one second and zero in the next one. But, felt it is OK if not every sample registers a failure. Since the threshold is at 60%, it needs only 60% of samples to register the failure. 
+
+But, in worst case, it is possible to have a scenario where only every other sample registers a failure. The probability of running in to this is more if the TimePeriod is set to some low value.
+
+One option is to change the REFRESH_INTERVAL to 2 seconds and divide the TimePeriod by 2 during calculations. Let me think more on this.
+
+
+
+Dave on service specific settings:
+
+My vote would be for one REST API & I guess I might change the "time period" parameter to be "KV disk failure time period" with the idea that if the value is 0, disk failure auto failover is disabled.
+
+In the future as we are asked to add auto failover for things like index or FTS disk failures or whatever might go wrong with eventing, I think we plan to add them with a service qualifier.
+
+The CLI is already used to this - the model is that users set all the parameters for a given configuration setting. Mike has thought about adding something like an --overlay option for convenience where the CLI would read the current config and overlay whatever parameter values are passed to it by the users.
+
+-----------------------------------------
+
+Autofailover count:
+
+auto_failover:enable(Timeout, MaxCount, Extras)
+
+stored in auto_failover as max_count
+
+count - how many events happened
+max_count - max events allowed
+
+
+allow_failover(SG, #state{count = Count, max_count = Max,
+                          failed_over_server_groups = FOSGs}, Action) ->
+
+
+called from
+process_action({failover, {Node, _UUID}}, S, DownNodes, NodeStatuses,
+               Snapshot) ->
+
+
+current code assumes that there's just one {failover } action
+we need to group them all and do multiple nodes failover
+
+1. see if we can failover all nodes together
+2. if not => see if we can failover just kv
+
+or:
+
+1. sort failovers with kv nodes first
+2. failover as many as we can
+3. report auto_failover_maximum_reached for the rest of them
+
+
+
+
+
+
+---------------------------------------------------------
+
+
+auto_failover_logic: pre_Neo_test_ (Other node down)...[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:155]Transitioned node {c,<<"c">>} state new -> up
+[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,c,new,
+                                      up,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},0,new,false}
+->{node_state,{b,<<"b">>},0,half_down,false}
+[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,new,
+                                      half_down,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},0,half_down,false}
+->{node_state,{b,<<"b">>},1,half_down,false}
+[ns_server:debug,2021-08-31T16:33:40.008-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      half_down,half_down,1}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},1,half_down,false}
+->{node_state,{b,<<"b">>},2,half_down,false}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      half_down,half_down,2}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:process_frame:297]List of candidates changed from [] to [{b,<<"b">>}]. Resetting counter
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},2,half_down,false}
+->{node_state,{b,<<"b">>},0,nearly_down,false}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      half_down,nearly_down,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},0,nearly_down,false}
+->{node_state,{b,<<"b">>},1,nearly_down,false}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      nearly_down,nearly_down,1}: {error,
+                                                                   badarg}
+[ns_server:debug,2021-08-31T16:33:40.009-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:test_frame:658]
+---------------
+5: []
+{state,[],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+4: []
+[{node_state,{a,<<"a">>},0,up,false},
+ {node_state,{b,<<"b">>},0,half_down,false},
+ {node_state,{c,<<"c">>},0,up,false}]
+3: []
+[{node_state,{b,<<"b">>},1,half_down,false}]
+2: []
+[{node_state,{b,<<"b">>},2,half_down,false}]
+1: []
+[{node_state,{b,<<"b">>},0,nearly_down,false}]
+0: []
+[{node_state,{b,<<"b">>},1,nearly_down,false}]
+
+----------------
+
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:process_frame:304]List of auto failover candidates [{b,<<"b">>}] doesn't match the nodes being down [{b,
+                                                                                    <<"b">>},
+                                                                                   {c,
+                                                                                    <<"c">>}]. Resetting counter
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},1,nearly_down,false}
+->{node_state,{b,<<"b">>},0,nearly_down,false}
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      nearly_down,nearly_down,0}: {error,
+                                                                   badarg}
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{c,<<"c">>},0,up,false}
+->{node_state,{c,<<"c">>},0,half_down,false}
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,c,up,
+                                      half_down,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:process_frame:336]Decided on following actions: [{mail_down_warning,{b,<<"b">>}}]
+[ns_server:debug,2021-08-31T16:33:40.010-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:test_frame:658]
+---------------
+1: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},1,nearly_down,false},
+        {node_state,{c,<<"c">>},0,up,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+0: [{mail_down_warning,{b,<<"b">>}}]
+[{node_state,{b,<<"b">>},0,nearly_down,true}]
+
+----------------
+
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:155]Transitioned node {c,<<"c">>} state new -> up
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,c,new,
+                                      up,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},0,nearly_down,true}
+->{node_state,{b,<<"b">>},0,half_down,true}
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      nearly_down,half_down,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:157]Incremented down state:
+{node_state,{b,<<"b">>},0,half_down,true}
+->{node_state,{b,<<"b">>},1,half_down,true}
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,b,
+                                      half_down,half_down,1}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.011-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:test_frame:658]
+---------------
+2: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},0,nearly_down,true}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+1: []
+[{node_state,{b,<<"b">>},0,half_down,true},
+ {node_state,{c,<<"c">>},0,up,false}]
+0: []
+[{node_state,{b,<<"b">>},1,half_down,true}]
+
+----------------
+
+[ns_server:debug,2021-08-31T16:33:40.015-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:155]Transitioned node {a,<<"a">>} state new -> up
+[ns_server:debug,2021-08-31T16:33:40.015-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:master_activity_events:submit_cast:76]Failed to send master activity event {autofailover_node_state_change,a,new,
+                                      up,0}: {error,badarg}
+[ns_server:debug,2021-08-31T16:33:40.015-07:00,test-3hSAS1lDSpvGAMWn@Destrier:<0.127.0>:auto_failover_logic:log_master_activity:155]Transitioned node {d,<<"d">>} state new -> up
+*failed*
+in function auto_failover_logic:'-test_body/4-fun-0-'/2 (src/auto_failover_logic.erl, line 696)
+in call from auto_failover_logic:'-test_body/4-fun-1-'/4 (src/auto_failover_logic.erl, line 696)
+in call from lists:foldl/3 (lists.erl, line 1263)
+in call from eunit_test:run_testfun/1 (eunit_test.erl, line 71)
+in call from eunit_proc:run_test/1 (eunit_proc.erl, line 510)
+in call from eunit_proc:with_timeout/3 (eunit_proc.erl, line 335)
+in call from eunit_proc:handle_test/2 (eunit_proc.erl, line 493)
+in call from eunit_proc:tests_inorder/3 (eunit_proc.erl, line 435)
+**error:{assertEqual,[{module,auto_failover_logic},
+              {line,696},
+              {expression,"Actions"},
+              {expected,[{failover,{b,<<"b">>}}]},
+              {value,[]}]}
+  output:<<"">>
+
+make -j 8
+
+[ERROR] Failed to execute goal on project asterix-external-data: Could not resolve dependencies for project org.apache.asterix:asterix-external-data:jar:0.9.6-SNAPSHOT: Could not find artifact com.azure:azure-storage-blob:jar:12.6.0 in central (https://repo.maven.apache.org/maven2) -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/DependencyResolutionException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <goals> -rf :asterix-external-data
+make[4]: *** [../analytics/target/asterixdb-maven-marker] Error 1
+make[3]: *** [analytics/CMakeFiles/analytics-maven-uptodate.dir/all] Error 2
+make[3]: *** Waiting for unfinished jobs....
+
+
+
+[ns_server:error,2021-09-13T17:58:50.578-07:00,n_0@192.168.0.9:<0.1432.0>:failover:is_possible:590]Failover of unknown nodes [{'n_2@127.0.0.1',
+                               <<"d361aa809e09efcac627ff57bac32828">>},
+                           {'n_3@127.0.0.1',
+                               <<"bca5af0972f66dc6be8d0a8ce4b967ee">>}] is requested. Known nodes: ['n_0@192.168.0.9',
+                                                                                                    'n_1@127.0.0.1',
+                                                                                                    'n_2@127.0.0.1',
+                                                                                                    'n_3@127.0.0.1',
+                                                                                                    'n_4@127.0.0.1']
+3: []
+{state,[{node_state,{a,<<"a">>},0,up,false},
+        {node_state,{b,<<"b">>},0,up,false},
+        {node_state,{c,<<"c">>},0,up,false}],
+       [{service_state,kv,nil,false},
+        {service_state,n1ql,nil,false},
+        {service_state,index,nil,false},
+        {service_state,fts,nil,false},
+        {service_state,cbas,nil,false},
+        {service_state,eventing,nil,false},
+        {service_state,backup,nil,false}],
+       {down_group_state,nil,0,nil},
+       3}
+2: []
+[{node_state,{b,<<"b">>},0,half_down,false}]
+1: []
+[{node_state,{b,<<"b">>},1,half_down,false}]
+0: []
+[{node_state,{b,<<"b">>},2,half_down,false}]
+
+
+<<B1:48, _:4, B2:12, _:2, B3:62>> = crypto:strong_rand_bytes(16),
+<<TimeLow:32, TimeMid:16, TimeHiVersion:16,
+      ClockSeqHiReserved:8, ClockSeqLow:8,
+      Node:48>> = <<B1:48, 0:1, 1:1, 0:1, 0:1, B2:12, 1:1, 0:1, B3:62>>,
+
+list_to_binary(lists:flatten(
+                     io_lib:format(
+                       "~8.16b-~4.16b-~4.16b-~2.16b~2.16b-~12.16b",
+                       [TimeLow, TimeMid, TimeHiVersion,
+                        ClockSeqHiReserved, ClockSeqLow,
+                        Node]))).
+
+
+    <<B1:48, 0:1, 1:1, 0:1, 0:1, B2:12, 1:1, 0:1, B3:62>>
+
+
+<<Time_low:32, Time_mid:16, _:4, B1:12, _:2, B2:6,
+      Clock_seq_hi_reserved0:8/bits, Clock_seq_low:8,
+      Node:48>> = crypto:strong_rand_bytes(16), %% 16 * 8 = 128 bits.
+
+
+
+(n_0@127.0.0.1)13> json_rpc_connection:perform_call("index-service_api", "ServiceAPI.GetNodeInfo", {[]}).
+{ok,{[{<<"nodeId">>,<<"ba64b243c5892d86b7bb8404b2427030">>},
+      {<<"priority">>,6},
+      {<<"opaque">>,null}]}}
+(n_0@127.0.0.1)14> json_rpc_connection:perform_call("index-service_api", "ServiceAPI.GetNodeInfos", {[]}).
+{error,method_not_found}
+
+
+n_0@127.0.0.1)16> service_api:get_node_info("index-service_api").
+{ok,{[{<<"nodeId">>,<<"ba64b243c5892d86b7bb8404b2427030">>},
+      {<<"priority">>,6},
+      {<<"opaque">>,null}]}}
+
+---------------------------------------
+
+1. RPC_TIMEOUT of HealthCheck API
+2. disk failures during slow HealthCheck
+3. error from is_safe: {error,{unknown_error,<<"a,b,c">>}}
+
+[json_rpc:debug,2021-10-11T18:06:26.784-07:00,n_1@127.0.0.1:json_rpc_connection-index-service_api<0.10971.0>:json_rpc_connection:handle_call:156]sending jsonrpc call:{[{jsonrpc,<<"2.0">>},
+                       {id,43},
+                       {method,<<"ServiceAPI.IsSafe">>},
+                       {params,[[<<"2e0e90a8245f32ce9e768ca6eb5a30c1">>]]}]}
+[json_rpc:debug,2021-10-11T18:06:26.787-07:00,n_1@127.0.0.1:json_rpc_connection-index-service_api<0.10971.0>:json_rpc_connection:handle_info:89]got response: [{<<"id">>,43},
+               {<<"result">>,null},
+               {<<"error">>,<<"2e0e90a8245f32ce9e768ca6eb5a30c1">>}]
+[user:info,2021-10-11T18:06:26.789-07:00,n_0@192.168.0.13:auto_failover_log<0.1246.0>:auto_failover_log:report:107]Could not automatically fail over node ('n_2@127.0.0.1') due to operation being unsafe for service index. 2e0e90a8245f32ce9e768ca6eb5a30c1
+[ns_server:debug,2021-10-11T18:06:26.789-07:00,n_0@192.168.0.13:<0.1244.0>:failover:start:35]Starting failover with Nodes = [], AllowUnsafe = false
+
+[error_logger:error,2021-10-11T18:06:26.790-07:00,n_0@192.168.0.13:<0.15029.0>:ale_error_logger_handler:do_log:101]
+=========================CRASH REPORT=========================
+  crasher:
+    initial call: failover:'-start/2-fun-0-'/0
+    pid: <0.15029.0>
+    registered_name: []
+    exception error: no function clause matching 
+                     failover:run([],false,<0.1244.0>) (src/failover.erl, line 61)
+      in function  failover:'-start/2-fun-0-'/3 (src/failover.erl, line 41)
+    ancestors: [<0.1244.0>,ns_orchestrator_child_sup,ns_orchestrator_sup,
+                  mb_master_sup,mb_master,leader_registry_sup,
+                  leader_services_sup,<0.663.0>,ns_server_sup,
+                  ns_server_nodes_sup,<0.269.0>,ns_server_cluster_sup,
+                  root_sup,<0.140.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.1244.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 376
+    stack_size: 27
+    reductions: 163
+  neighbours:
+
+
+** Reason for termination ==
+** {function_clause,
+       [{auto_failover_log,report,
+            [{function_clause,
+                 [{failover,run,
+                      [[],false,<0.1244.0>],
+                      [{file,"src/failover.erl"},{line,61}]},
+                  {failover,'-start/2-fun-0-',3,
+                      [{file,"src/failover.erl"},{line,41}]},
+                  {proc_lib,init_p,3,[{file,"proc_lib.erl"},{line,234}]}]},
+             [{'n_2@127.0.0.1',<<"2e0e90a8245f32ce9e768ca6eb5a30c1">>}]],
+            [{file,"src/auto_failover_log.erl"},{line,65}]},
+        {auto_failover_log,handle_cast,2,
+            [{file,"src/auto_failover_log.erl"},{line,61}]},
+        {gen_server2,handle_cast,2,[{file,"src/gen_server2.erl"},{line,221}]},
+        {gen_server,try_dispatch,4,[{file,"gen_server.erl"},{line,637}]},
+        {gen_server,handle_msg,6,[{file,"gen_server.erl"},{line,711}]},
+        {proc_lib,init_p_do_apply,3,[{file,"proc_lib.erl"},{line,249}]}]}
+
+=========================CRASH REPORT=========================
+  crasher:
+    initial call: auto_failover:init/1
+    pid: <0.1322.0>
+    registered_name: []
+    exception error: no function clause matching 
+                     index_monitor:is_node_down([]) (src/index_monitor.erl, line 52)
+      in function  auto_failover:'-is_node_down/1-fun-0-'/2 (src/auto_failover.erl, line 590)
+      in call from lists:foldl/3 (lists.erl, line 1263)
+      in call from auto_failover:is_node_down/1 (src/auto_failover.erl, line 581)
+      in call from auto_failover:'-fastfo_down_nodes/1-fun-0-'/3 (src/auto_failover.erl, line 545)
+      in call from lists:foldl/3 (lists.erl, line 1263)
+      in call from auto_failover:handle_info/2 (src/auto_failover.erl, line 282)
+      in call from gen_server:try_dispatch/4 (gen_server.erl, line 637)
+    ancestors: [ns_orchestrator_sup,mb_master_sup,mb_master,
+                  leader_registry_sup,leader_services_sup,<0.669.0>,
+                  ns_server_sup,ns_server_nodes_sup,<0.269.0>,
+                  ns_server_cluster_sup,root_sup,<0.140.0>]
+    message_queue_len: 0
+    messages: []
+    links: [<0.1240.0>,<0.1323.0>]
+    dictionary: []
+    trap_exit: false
+    status: running
+    heap_size: 4185
+    stack_size: 27
+    reductions: 21297
+  neighbours:
+
+
+
+---------------------------------
+
+1. trim kv nodes
+2. safety check on kv nodes
+3. orchestrate
+4. fail over buckets
+5. safety check on services
+
+
+Testing:
+
+1. Error in HealthCheck, ok in IsSafe
+
+
+handle_rebalance_completion({shutdown, {ok, _}} = ExitReason, State) ->
+    handle_rebalance_completion(normal, ExitReason, State);
+handle_rebalance_completion(ExitReason, State) ->
+    handle_rebalance_completion(ExitReason, ExitReason, State).
+
+handle_rebalance_completion(ExitReason, ToReply, State) ->
+    cancel_stop_timer(State),
+    maybe_reset_autofailover_count(ExitReason, State),
+    maybe_reset_reprovision_count(ExitReason, State),
+    {ResultType, Msg} = log_rebalance_completion(ExitReason, State),
+    maybe_retry_rebalance(ExitReason, State),
+    update_rebalance_counters(ExitReason, State),
+    ns_rebalance_observer:record_rebalance_report(
+      {ResultType, list_to_binary(Msg)}),
+    update_rebalance_status(ExitReason, State),
+    rpc:eval_everywhere(diag_handler, log_all_dcp_stats, []),
+    terminate_observer(State),
+    maybe_reply_to(ToReply, State),
+    maybe_request_janitor_run(ExitReason, State),
+
+    R = compat_mode_manager:consider_switching_compat_mode(),
+    case maybe_start_service_upgrader(ExitReason, R, State) of
+        {started, NewState} ->
+            {next_state, rebalancing, NewState};
+        not_needed ->
+            maybe_eject_myself(ExitReason, State),
+            %% Use the reason for aborting rebalance here, and not the reason
+            %% for exit, we should base our next state and following activities
+            %% based on the reason for aborting rebalance.
+            rebalance_completed_next_state(State#rebalancing_state.abort_reason)
+    end.
+

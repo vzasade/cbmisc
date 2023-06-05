@@ -1,0 +1,24 @@
+How to use client certs:
+
+# Grab the private key from the server. Copy the content and put it in a ca.key file.
+curl -s localhost:9000/diag/eval -u Administrator:asdasd -d '{value, {C, K}} = ns_config:search(cert_and_pkey), K.'
+
+# Get the CA cert from the memcached.pem file:
+cp memcached-cert.pem ca.pem
+
+# edit to remove the node cert (the first cert)
+# Generate a key for the client cert
+openssl genrsa -out client.key 1024
+
+# Generate a certificate signing request based on this key. When it comes time 
+# to enter the CN use the name 'Administrator'
+openssl req -new -key client.key -out client.req
+
+# Generate the client cert using the CA cert and key and the certificate signing request
+openssl x509 -req -in client.req -CA ca.pem -CAkey ca.key -set_serial 101 -extensions client -days 365 -outform PEM -out client.cer
+
+# cat the client cert and key into one bundle
+cat client.key  client.cer  > client-bundle.pem
+
+# curl
+curl -i -k https://127.0.0.1:19000/pools/default/remoteClusters  --cert client-bundle.pem

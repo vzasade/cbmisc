@@ -1,0 +1,1891 @@
+new_bucket_default_params(memcached) ->
+    Nodes = ns_cluster_membership:service_active_nodes(kv),
+    [{type, memcached},
+     {num_vbuckets, 0},
+     {num_replicas, 0},
+     {servers, Nodes},
+     {map, []},
+     {ram_quota, 0}].
+
+
+ns_bucket:set_servers(Bucket, Servers) ->
+    set_property(Bucket, servers, Servers).
+
+
+ns_janitor:check_server_list(Bucket, BucketConfig) ->
+  - sets bucket servers to active kv nodes
+
+
+handle_local_random_key(Bucket, Req) ->
+needs to be fixed to use servers
+
+
+Assumptions:
+1. ns_server is agnostic to subclusters. subclusters are stored and managed by Elixir Control Panel
+2. Everything is done by REST API's. ns_server UI support might require some extra stuff
+
+
+List of the topology API behaviors we need for the subclusters support.
+
+1. Allow to assign the list of kv nodes to the bucket at bucket creation time
+2. Allow to add/remove existing servers to/from the bucket manually. That will mark certain servers as to_be_removed or to_be_added and subsequent rebalance should take care of rebuilding the map correctly
+3. Do not allow to rebalance out the last server for the bucket
+4. Provide API to return list of unbalanced buckets
+5. Provide API to to rebalance a list of buckets. With this functionality the new node will be activated if it is activated on at least one bucket and ejected if it is deactivated on all buckets.
+6. Auto-failover: do not limit the number of autofailover events. The unhealthy node should be automatically failed over if there's no data loss (alternative: if at least 2 partitions are left in each chain) 
+
+
+new rebalance API to accept full kv topology: bucket[servers], bucket[servers]...
+
+
+width - how many nodes in SG the bucket should reside on
+weight - how many virtual space slots the bucket reserves if it resides on a node
+weight_limit - how many virtual space slots are available on each node
+
+
+weight not consistent with current placement
+
+-----------------------
+Bucket rename
+-----------------------
+
+chronicle:
+
+bucket_names => ["blahbucket"]
+{bucket,"blahbucket",collections}
+{bucket,"blahbucket",props}
+{bucket,"blahbucket",uuid}
+{<<"65af2f16bb9dce18baccaa01b2854473">>,
+            {<<"693de97ae64228e67f91185709c596f0">>,17}},
+
+{node,'n_0@192.168.0.18',buckets_with_data} =>
+           {[{"blahbucket",<<"65af2f16bb9dce18baccaa01b2854473">>}],
+
+{node,'n_0@192.168.0.18',
+             {"blahbucket",last_seen_collection_ids}} =>
+           {[1,8,8],{<<"693de97ae64228e67f91185709c596f0">>,25}},
+
+???? {node,'n_1@127.0.0.1',failover_vbuckets} =>
+           {[],{<<"693de97ae64228e67f91185709c596f0">>,36}},
+
+ns_config:
+none
+
+user_storage:
+
+ddocs:
+
+------------------------------------------------
+
+
+
+
+
+[ns_server:debug,2022-06-01T15:12:56.332-07:00,n_1@127.0.0.1:ns_config_rep<0.475.0>:ns_config_rep:do_push_keys:383]Replicating some config keys ([{local_changes_count,
+                                   <<"6ea558df4dc6ebfd5b27b7b7e87e8a7a">>},
+                               {metakv,
+                                   <<"/throttle/report/kv/6ea558df4dc6ebfd5b27b7b7e87e8a7a">>}]..)
+
+
+[ns_server:debug,2022-06-01T15:12:56.332-07:00,n_1@127.0.0.1:ns_config_log<0.271.0>:ns_config_log:log_common:277]config change:
+{metakv,<<"/throttle/report/kv/6ea558df4dc6ebfd5b27b7b7e87e8a7a">>} ->
+[{'_vclock',63821327610,
+            [{<<"6ea558df4dc6ebfd5b27b7b7e87e8a7a">>,{95,63821340776}},
+             {<<"a1b575e4c04cc4309887f8e380480e29">>,{4,63821340726}}]}|
+ <<1,138,239,208,138,146,48,4,116,101,115,116,0,0,0,0,0,0>>]
+[ns_server:debug,2022-06-01T15:12:56.334-07:00,couchdb_n_1@cb.local:ns_config_log<0.324.0>:ns_config_log:log_common:277]config change:
+{local_changes_count,<<"6ea558df4dc6ebfd5b27b7b7e87e8a7a">>} ->
+[{'_vclock',[{<<"6ea558df4dc6ebfd5b27b7b7e87e8a7a">>,{112,63821340776}}]}]
+
+
+--------------------------------------------------
+
+new bucket fields
+
+placer = [{width, X}, {weight, X}, {desired_servers, []}]
+
+
+ns_orchestrator:start_rebalance_for_buckets(['n_0@192.168.0.18', 'n_1@127.0.0.1'], [], ["test"]).
+
+Implement check for Ejected nodes!!
+
+
+
+POST http://127.0.0.1:9000/pools/default/buckets
+
+name=test&bucketType=membase&storageBackend=couchstore&autoCompactionDefined=false&evictionPolicy=valueOnly&threadsNumber=3&replicaNumber=1&durabilityMinLevel=none&compressionMode=passive&maxTTL=0&replicaIndex=0&conflictResolutionType=seqno&ramQuotaMB=1899&flushEnabled=0
+
+
+name=test&
+bucketType=membase&
+storageBackend=couchstore&
+autoCompactionDefined=false&
+evictionPolicy=valueOnly&
+threadsNumber=3&
+replicaNumber=1&
+durabilityMinLevel=none&
+compressionMode=passive&
+maxTTL=0&
+replicaIndex=0&
+conflictResolutionType=seqno&
+ramQuotaMB=1899&
+flushEnabled=0
+
+name=test&
+storageBackend=couchstore&
+autoCompactionDefined=true&
+evictionPolicy=valueOnly&
+threadsNumber=3&
+replicaNumber=1&
+durabilityMinLevel=none&
+compressionMode=passive&
+maxTTL=0&
+indexCompactionMode=circular&
+databaseFragmentationThreshold%5Bpercentage%5D=30&
+databaseFragmentationThreshold%5Bsize%5D=undefined&
+viewFragmentationThreshold%5Bpercentage%5D=30&
+viewFragmentationThreshold%5Bsize%5D=undefined&
+parallelDBAndViewCompaction=false&
+purgeInterval=3&
+ramQuotaMB=1899&
+flushEnabled=0
+
+
+New parameters needed
+width
+weight
+NO - desiredServers
+
+width and weight has to be specified if bucket placer is enabled
+
+name=t&bucketType=membase&ramQuotaMB=400&replicaNumber=2
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t&bucketType=membase&ramQuotaMB=400&replicaNumber=2'
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets/t -d 'width=2&weight=1'
+ns_orchestrator:start_rebalance_for_buckets(['n_0@192.168.0.18','n_1@127.0.0.1', 'n_2@127.0.0.1'], [], ["t"]).
+
+
+
+
+mb_map:generate_map([[c,b], [a,c], [b,c]], 1, [a,b], [{maps_history, []}, {replication_topology,star}, {tags,undefined}, {max_slaves,10}]).
+
+rebalance:
+no_kv_nodes_left
+no_active_nodes_left
+
+failover:
+last_node
+
+-----------------------------------
+
+failover:
+1. disallow emptying servers
+2. remove node from desired servers
+
+rebalance:
+
+disallow ejecting node if it is in the servers of one of the buckets that is not getting rebalanced
+
+disallow ejecting node if it leaves desired_servers empty
+disallow rebalance if desired servers are empty
+
+substruct ejected and failed over nodes from desired servers 
+
+should this be optimized?
+deactivate_bucket_data_on_unknown_nodes
+
+
+
+---------------------------------------------
+
+before rebalance:
+
+1. remove ejected nodes from desired servers
+2. check if width corresponds to desired_servers and replace the buckets
+
+
+bucket_placer:rebalance(KeepNodes)
+
+
+%% rebalance
+%%
+%% ! 1. construct zone
+%% 2. ??? remove ejected nodes from buckets
+%% ! 3. remove ejected nodes from zone
+%% ! 4. sort buckets by weight
+%% 5. place all buckets on constructed zone
+%% 6. if success => return servers for the buckets
+%% 7. place all the buckets on empty zone
+
+Need to add new nodes to the group before rebalance!!!
+
+2 nodes
+bucket, width = 2
+eject one node
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t&bucketType=membase&ramQuotaMB=400&replicaNumber=2&width=1&weight=2'
+
+2 nodes
+bucket, width = 2
+eject one, add 2 -> rebalance
+
+
+MB-52265
+
+bucket create/update rest api's in serverless mode now support 
+2 additional parameters: weight and width. These parameters
+instruct bucket placer how to assign servers to the bucket
+
+width: how many servers should be assigned to the bucket
+in each availability zone
+
+weight: how many virtual space slots should the bucket occupies
+when residing on the node.
+
+Examples of the api calls:
+
+create:
+POST /pools/default/buckets -d 'name=t&bucketType=membase&ramQuota=4000&width=2&weight=1'
+
+update:
+POST /pools/default/buckets/t -d 'width=2&weight=1'
+
+Change-Id: I447b78a830d8cfc355bd50881295a84ce0c38955
+
+
+--------------------------
+\
+2097123456
+
+1. Discuss more detailed error messages.
+
+
+menelaus_web_pools:check_and_handle_pool_info
+handle_pool_info(Id, Req)
+build_pool_info
+do_build_pool_info - cached!!!!
+menelaus_web_node:build_nodes_info
+build_nodes_info_fun
+
+
+"summaries":{"ramSummary":{"total":19917701120,"otherBuckets":0,"nodesCount":1,"perNodeMegs":18995,"thisAlloc":19917701120,"thisUsed":0,"free":0},"hddSummary":{"total":499963174912,"otherData":109991898480,"otherBuckets":0,"thisUsed":0,"free":389971276432}}}
+
+
+In 6.5 created 2 buckets, one using the following commend line:
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t&bucketType=membase&ramQuotaMB=400'
+
+Another one using UI with default settings.
+
+Bucket "t": {replica_index,true},
+Bucket "ui": {replica_index,false}
+
+Same result for elixir:
+
+Bucket "t": {replica_index,true},
+Bucket "ui": {replica_index,false}
+
+
+Replicate view indexes
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes='n_0@192.168.1.102','n_1@127.0.0.1'"
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.1.102,n_1@127.0.0.1&defragmentZones=Group 1"
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.1.102,n_1@127.0.0.1&defragmentZones=Group 1"
+
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.1.102,n_1@127.0.0.1&defragmentZones=Group 1,Group 2"
+
+POST /controller/rebalance -d "knownNodes=node1,node2&defragmentZones=AZ1,AZ2"
+
+
+
+Disable auto-retry rebalance for elixir.
+
+
+
+                ["pools", "default", "bucketsStreaming", Id] ->
+                    {{[{bucket, Id}, settings], read},
+                     fun menelaus_web_buckets:handle_bucket_info_streaming/3,
+                     ["default", Id]};
+
+
+
+                ["settings", "throttle", BucketId] ->
+                    {{[admin, settings], read},
+                        fun throttle_service_settings:handle_settings_throttle_get/2, [BucketId]};
+
+
+       {memory,16672},
+       {message_queue_len,0},
+       {reductions,1439},
+
+
+         {memory,15994976},
+       {message_queue_len,0},
+       {reductions,554524},
+
+
+       {garbage_collection,
+           [{max_heap_size,#{error_logger => true,kill => true,size => 0}},
+            {min_bin_vheap_size,46422},
+            {min_heap_size,233},
+            {fullsweep_after,512},
+            {minor_gcs,4}]},
+       {garbage_collection_info,
+           [{old_heap_block_size,376},
+            {heap_block_size,1598},
+            {mbuf_size,0},
+            {recent_size,22},
+            {stack_size,10},
+            {old_heap_size,58},
+            {heap_size,572},
+            {bin_vheap_size,0},
+            {bin_vheap_block_size,46422},
+            {bin_old_vheap_size,0},
+            {bin_old_vheap_block_size,46422}]},
+
+
+       {garbage_collection,
+           [{max_heap_size,#{error_logger => true,kill => true,size => 0}},
+            {min_bin_vheap_size,46422},
+            {min_heap_size,233},
+            {fullsweep_after,512},
+--            {minor_gcs,26}]},
+       {garbage_collection_info,
+--           [{old_heap_block_size,999631},
+--            {heap_block_size,999631},
+--            {mbuf_size,0},
+            {recent_size,303791},
+            {stack_size,10},
+            {old_heap_size,54},
+--            {heap_size,304208},
+            {bin_vheap_size,714},
+            {bin_vheap_block_size,46422},
+            {bin_old_vheap_size,0},
+            {bin_old_vheap_block_size,46422}]},
+
+       {garbage_collection,
+           [{max_heap_size,#{error_logger => true,kill => true,size => 0}},
+            {min_bin_vheap_size,46422},
+            {min_heap_size,233},
+            {fullsweep_after,512},
+--            {minor_gcs,270}]},
+       {garbage_collection_info,
+--           [{old_heap_block_size,1727361},
+--            {heap_block_size,1439468},
+            {mbuf_size,0},
+--            {recent_size,437151},
+            {stack_size,10},
+            {old_heap_size,130},
+--            {heap_size,440904},
+            {bin_vheap_size,9548},
+            {bin_vheap_block_size,46422},
+            {bin_old_vheap_size,0},
+            {bin_old_vheap_block_size,75110}]},
+
+
+25335512
+
+--------------------
+
+            {memory,25335512},
+       {reductions,279058974},
+
+
+{memory, Size}
+Size is the size in bytes of the process. This includes call stack, heap, and internal structures.
+
+{reductions, Number}
+Number is the number of reductions executed by the process.
+
+
+
+----------------------------------------------------
+
+auto_failover:validate_kv - validates if kv failover is safe
+auto_failover:trim_nodes - max count enforcement
+
+
+validate_bucket_safety(_BucketName, Map, Nodes)
+
+
+check Delta Recovery!!!!!!
+
+
+
+parse_validate_max_count(Args, CurrRV, Config) ->
+    CurrMax =
+        case proplists:get_value(?MAX_EVENTS_CONFIG_KEY, Config) of
+            infinity ->
+                "infinity";
+            X ->
+                integer_to_list(X)
+        end,
+    Min = ?MIN_EVENTS_ALLOWED,
+    Max = max_events_allowed(),
+    MaxCount = proplists:get_value("maxCount", Args, CurrMax),
+    case proplists:get_value("maxCount", Args, CurrMax) of
+        "infinity" ->
+            case cluster_compat_mode:is_cluster_elixir() of
+                true ->
+                    [{maxCount, infinity} | CurrRV];
+                false ->
+                    {error, [{maxCount, <<"Value ">>
+            end;
+        MaxCount ->
+            case parse_validate_number(MaxCount, Min, Max) of
+                {ok, Val} ->
+                    [{maxCount, Val} | CurrRV];
+                _ ->
+                    range_err(maxCount, Min, Max)
+            end
+    end.
+
+
+case extract_value(InternalName, Values) of
+  not_found ->
+    case maps:find(default, Spec) of
+         {value, V} ->
+           {true, {FormattedKey, V}};
+         error ->
+           false;
+
+-----
+
+
+
+enabled: true
+timeout: 12
+failoverOnDataDiskIssues[enabled]: false
+failoverOnDataDiskIssues[timePeriod]: 120
+maxCount: 1
+
+
+GET /pools/default/services/<service>/defragmented
+
+o
+
+Proposed API to
+
+
+Auto-Scaling & Auto-Rebalancing APIs
+------------------------------------
+https://docs.google.com/document/d/1849K4MuUxGKSyHH8I_QWzzoOevwGTOvZMbszCj81XuU
+
+
+
+GET /pools/default/services/<service>/defragmented
+
+
+GetDefragmentedUtilization
+
+{
+  "n_1@index1.couchbase.com": {
+     "memory": 3840,
+     "billableUnits": 1500,
+     "tenants":5
+  },
+  ........
+}
+
+~/work/elixir/goproj/src/github.com/couchbase
+
+-define(, ?get_timeout(get_defragmented_utilization, 30000)).
+
+
+service_safety_check(Service, DownNodes, UUIDDict) ->
+    ActiveNodes = ns_cluster_membership:service_active_nodes(Service),
+    case ActiveNodes -- DownNodes of
+        [] ->
+            {error, mail_too_small};
+        [FirstNode | _] = ServiceAliveNodes ->
+            NodeToCall =
+                case lists:member(node(), ServiceAliveNodes) of
+                    true ->
+                        node();
+                    false ->
+                        FirstNode
+                end,
+            ServiceDownNodes = ActiveNodes -- ServiceAliveNodes,
+            NodeIds = ns_cluster_membership:get_node_uuids(ServiceDownNodes,
+                                                           UUIDDict),
+            case rpc:call(NodeToCall, service_api, is_safe, [Service, NodeIds],
+                          ?SAFETY_CHECK_TIMEOUT) of
+                {badrpc, Error} ->
+                    ?log_warning("Failed to execute safety check for service ~p"
+                                 " on node ~p. Error = ~p",
+                                 [Service, NodeToCall, Error]),
+                    {error, "Safety check failed."};
+                Other ->
+                    Other
+            end
+    end.
+
+
+curl -v http://Administrator:asdasd@localhost:9000/pools/default/services/index/defragmented
+
+
+[json_rpc:debug,2022-09-19T12:45:10.755-07:00,n_0@127.0.0.1:json_rpc_connection-fts-service_api<0.867.0>:json_rpc_connection:handle_call:156]sending jsonrpc call:{[{jsonrpc,<<"2.0">>},
+                       {id,5},
+                       {method,<<"ServiceAPI.GetDefragmentedUtilization">>},
+                       {params,[{[{serviceApiVersion,"1.0"}]}]}]}
+[json_rpc:debug,2022-09-19T12:45:10.755-07:00,n_0@127.0.0.1:json_rpc_connection-fts-service_api<0.867.0>:json_rpc_connection:handle_info:89]got response: [{<<"id">>,5},
+               {<<"result">>,null},
+               {<<"error">>,
+                <<"json: cannot unmarshal array into Go value of type map[string]int">>}]
+
+
+c.enc.Encode(resp)
+
+type serverResponse struct {
+	Id     *json.RawMessage `json:"id"`
+	Result any              `json:"result"`
+	Error  any              `json:"error"`
+}
+
+
+enc *json.Encoder // for writing JSON values
+
+
+
+repo init -u https://github.com/couchbase/build-manifests.git -g all -m couchbase-server/neo/7.1.2.xml
+
+Upgrading config by changes
+
+chronicle_upgrade
+
+
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t1&bucketType=membase&ramQuota=4000&width=1&weight=1'
+
+
+POST http://127.0.0.1:9000/controller/rebalance
+
+knownNodes: n_0@192.168.0.18,n_1@127.0.0.1,n_2@127.0.0.1,n_3@127.0.0.1
+ejectedNodes: 
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes='n_0@192.168.0.18, n_1@127.0.0.1, n_2@127.0.0.1, n_3@127.0.0.1'"
+
+
+[ns_server:info,2022-10-05T16:42:24.139-07:00,n_0@192.168.0.18:<0.4173.0>:ns_orchestrator:idle:806]Starting rebalance, KeepNodes = ['n_0@192.168.0.18','n_1@127.0.0.1',
+                                 'n_2@127.0.0.1','n_3@127.0.0.1'], EjectNodes = [], Failed over and being ejected nodes = [], Delta recovery nodes = ['n_3@127.0.0.1'],  Delta recovery buckets = all; Operation Id = 948dc45db598c3d9a75cd633df43be43
+[rebalance:debug,2022-10-05T16:42:24.141-07:00,n_0@192.168.0.18:<0.25372.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1070]Couldn't delta recover bucket t2 because suitable vbucket map is not found in the history
+[rebalance:debug,2022-10-05T16:42:24.141-07:00,n_0@192.168.0.18:<0.25372.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1070]Couldn't delta recover bucket t1 because suitable vbucket map is not found in the history
+[ns_server:info,2022-10-05T16:42:24.141-07:00,n_0@192.168.0.18:<0.4173.0>:ns_orchestrator:idle:830]Rebalance <<"948dc45db598c3d9a75cd633df43be43">> was not started due to error: delta_recovery_not_possible
+
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1,n_2@127.0.0.1,n_3@127.0.0.1"
+
+{"deltaRecoveryNotPossible":1}
+
+
+[ns_server:debug,2022-10-05T17:29:49.404-07:00,n_0@192.168.0.18:<0.1482.0>:ns_rebalancer:start_link_rebalance:231]BLAH START {['n_0@192.168.0.18','n_1@127.0.0.1','n_2@127.0.0.1',
+             'n_3@127.0.0.1'],
+            [],[],
+            ['n_3@127.0.0.1'],
+            all}
+
+
+DeltaNodes = ['n_3@127.0.0.1']
+delta_recovery_buckets = all
+
+
+[rebalance:debug,2022-10-05T17:31:55.542-07:00,n_0@192.168.0.18:<0.12879.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1072]Couldn't delta recover bucket t2 because suitable vbucket map is not found in the history
+[rebalance:debug,2022-10-05T17:31:55.544-07:00,n_0@192.168.0.18:<0.12879.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1072]Couldn't delta recover bucket t1 because suitable vbucket map is not found in the history
+
+
+-----------------------------------------------
+
+[ns_server:debug,2022-10-05T17:36:22.601-07:00,n_0@192.168.0.18:<0.2566.0>:ns_rebalancer:find_delta_recovery_map:1000]BLAH CurrentOptions [{replication_topology,star},
+                     {tags,
+                         [{'n_0@192.168.0.18',<<"0">>},
+                          {'n_1@127.0.0.1',<<"0">>},
+                          {'n_2@127.0.0.1',
+                              <<"9b13eeaec160eb07d323c2314d2592d9">>},
+                          {'n_3@127.0.0.1',
+                              <<"9b13eeaec160eb07d323c2314d2592d9">>}]},
+                     {use_vbmap_greedy_optimization,true},
+                     {max_slaves,10}]
+
+
+
+[ns_server:debug,2022-10-05T17:36:22.602-07:00,n_0@192.168.0.18:<0.2566.0>:ns_rebalancer:find_delta_recovery_map:1001]BLAH History [{[['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_1@127.0.0.1','n_3@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1'],
+                ['n_3@127.0.0.1','n_1@127.0.0.1']],
+               [{replication_topology,star},
+                {tags,
+                    [{'n_1@127.0.0.1',<<"0">>},
+                     {'n_3@127.0.0.1',
+                         <<"9b13eeaec160eb07d323c2314d2592d9">>}]},
+                {use_vbmap_greedy_optimization,true},
+                {max_slaves,10}]},
+              {[['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_0@192.168.0.18','n_2@127.0.0.1'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18'],
+                ['n_2@127.0.0.1','n_0@192.168.0.18']],
+               [{replication_topology,star},
+                {tags,
+                    [{'n_0@192.168.0.18',<<"0">>},
+                     {'n_2@127.0.0.1',
+                         <<"9b13eeaec160eb07d323c2314d2592d9">>}]},
+                {use_vbmap_greedy_optimization,true},
+                {max_slaves,10}]},
+              {[['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined],
+                ['n_0@192.168.0.18',undefined]],
+               [{replication_topology,star},
+                {tags,undefined},
+                {use_vbmap_greedy_optimization,true},
+                {max_slaves,10}]}]
+[ns_server:debug,2022-10-05T17:36:22.603-07:00,n_0@192.168.0.18:<0.2566.0>:ns_rebalancer:find_delta_recovery_map:1002]BLAH MatchingMaps []
+[ns_server:debug,2022-10-05T17:36:22.603-07:00,n_0@192.168.0.18:<0.2566.0>:ns_rebalancer:find_delta_recovery_map:1003]BLAH FailoverVBs {dict,1,16,16,8,80,48,
+                       {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+                       {{[],
+                         [['n_3@127.0.0.1',0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,
+                           15]],
+                         [],[],[],[],[],[],[],[],[],[],[],[],[],[]}}}
+
+
+
+----------------------------------------------
+
+check_service_quota(kv, Quota, Snapshot) ->
+    BucketsQuota = get_total_buckets_ram_quota(Snapshot) div ?MIB,
+    MinMemoryMB = erlang:max(min_quota(kv), BucketsQuota),
+    check_min_quota(kv, MinMemoryMB, Quota);
+
+
+handle_pool_settings_post(Req)
+
+
+
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t1&bucketType=membase&ramQuotaMB=500&replicaNumber=2&width=1&weight=1'
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes='n_0@192.168.1.102','n_1@127.0.0.1'"
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default -d 'memoryQuota=500'
+
+
+curl -v -X GET http://Administrator:asdasd@localhost:9000/pools/default | jq
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1"
+
+
+(n_0@192.168.0.18)2> ns_cluster_membership:node_services('n_1@127.0.0.1').
+[index]
+
+(n_0@192.168.0.18)3> ns_cluster_membership:get_service_map(direct, index).    
+['n_0@192.168.0.18','n_1@127.0.0.1']
+
+ (n_0@192.168.0.18)4> ns_cluster_membership:get_service_map(direct, kv).   
+['n_0@192.168.0.18']
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1&ejectedNodes=n_1@127.0.0.1&services=kv"
+
+
+(n_0@192.168.0.18)2> ns_cluster_membership:get_service_map(direct, index).
+['n_0@192.168.0.18']
+
+(n_0@192.168.0.18)3> ns_cluster_membership:node_services('n_1@127.0.0.1').
+[index]
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1&ejectedNodes=n_1@127.0.0.1&services=kv"
+
+
+
+{error, io_lib:format("Unknown server given: ~p", [Bad])}
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/failOver -d "otpNode=blah"
+
+
+[85,110,107,110,111,119,110,32,115,101,114,118,101,114,32,103,105,118,101,110,58,32,[91,["\"blah\""],93]]
+
+
+[ns_server:debug,2022-10-21T16:32:50.825-07:00,n_0@192.168.0.18:<0.1431.0>:ns_orchestrator:get_unitialized_services:1621]BLAH SN #{bucket_names =>
+              {["test"],{<<"11c039b0a5b190131bb5bd1422ec7587">>,208}},
+          nodes_wanted =>
+              {['n_0@192.168.0.18','n_1@127.0.0.1'],
+               {<<"11c039b0a5b190131bb5bd1422ec7587">>,192}},
+          server_groups =>
+              {[[{uuid,<<"0">>},
+                 {name,<<"Group 1">>},
+                 {nodes,['n_0@192.168.0.18','n_1@127.0.0.1']}]],
+               {<<"11c039b0a5b190131bb5bd1422ec7587">>,192}},
+          {service_map,index} =>
+              {['n_0@192.168.0.18','n_1@127.0.0.1'],
+               {<<"11c039b0a5b190131bb5bd1422ec7587">>,237}},
+          {service_map,n1ql} =>
+              {['n_1@127.0.0.1'],{<<"11c039b0a5b190131bb5bd1422ec7587">>,236}},
+          {bucket,"test",props} =>
+              {[{deltaRecoveryMap,undefined},
+                {num_replicas,1},
+                {replica_index,false},
+                {ram_quota,1991245824},
+                {durability_min_level,none},
+                {num_vbuckets,16},
+                {pitr_enabled,false},
+                {pitr_granularity,600},
+                {pitr_max_history_age,86400},
+                {autocompaction,false},
+                {purge_interval,undefined},
+                {flush_enabled,false},
+                {num_threads,3},
+                {eviction_policy,value_only},
+                {conflict_resolution_type,seqno},
+                {storage_mode,couchstore},
+                {max_ttl,0},
+                {compression_mode,passive},
+                {type,membase},
+                {replication_topology,star},
+                {repl_type,dcp},
+                {servers,['n_0@192.168.0.18','n_1@127.0.0.1']},
+                {map_opts_hash,42591107},
+                {map,[['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_0@192.168.0.18','n_1@127.0.0.1'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18'],
+                      ['n_1@127.0.0.1','n_0@192.168.0.18']]},
+                {fastForwardMap,undefined}],
+               {<<"11c039b0a5b190131bb5bd1422ec7587">>,235}},
+          {bucket,"test",uuid} =>
+              {<<"398cb13ad224980052f2fbf89fe481b4">>,
+               {<<"11c039b0a5b190131bb5bd1422ec7587">>,208}},
+          {node,'n_0@192.168.0.18',membership} =>
+              {active,{<<"11c039b0a5b190131bb5bd1422ec7587">>,220}},
+          {node,'n_0@192.168.0.18',recovery_type} =>
+              {none,{<<"11c039b0a5b190131bb5bd1422ec7587">>,216}},
+          {node,'n_0@192.168.0.18',services} =>
+              {[index,kv],{<<"11c039b0a5b190131bb5bd1422ec7587">>,14}},
+          {node,'n_1@127.0.0.1',membership} =>
+              {active,{<<"11c039b0a5b190131bb5bd1422ec7587">>,220}},
+          {node,'n_1@127.0.0.1',recovery_type} =>
+              {none,{<<"11c039b0a5b190131bb5bd1422ec7587">>,216}},
+          {node,'n_1@127.0.0.1',services} =>
+              {[index,kv,n1ql],{<<"11c039b0a5b190131bb5bd1422ec7587">>,192}}}
+
+
+
+--------------------------------------
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t&bucketType=membase&ramQuotaMB=400&replicaNumber=2&width=1&weight=2'
+
+
+
+ns_orchestrator:needs_rebalance()
+
+
+-spec needs_rebalance() -> boolean().
+needs_rebalance() ->
+    NodesWanted = ns_node_disco:nodes_wanted(),
+    ServicesNeedRebalance =
+        lists:any(fun (S) ->
+                          service_needs_rebalance(S, NodesWanted)
+                  end, ns_cluster_membership:cluster_supported_services()),
+    ServicesNeedRebalance orelse buckets_need_rebalance(NodesWanted).
+
+
+service_needs_rebalance(Service, NodesWanted) ->
+    ServiceNodes = ns_cluster_membership:service_nodes(NodesWanted, Service),
+    ActiveServiceNodes = ns_cluster_membership:service_active_nodes(Service),
+    lists:sort(ServiceNodes) =/= lists:sort(ActiveServiceNodes) orelse
+        topology_aware_service_needs_rebalance(Service, ActiveServiceNodes).
+
+
+{node, Node, services} = get_service_map(Snapshot, Service)
+
+{service_status, Service}, needs_rebalance
+
+ns_rebalancer:bucket_needs_rebalance
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1&ejectedNodes=n_1@127.0.0.1&services=kv"
+
+
+--------------------------------------------------------
+
+There could potential be one issue here in the following example.
+
+1. On a single node cluster (n1: [kv, index, fts]) we seem to set the service_map in the janitor -> 
+https://src.couchbase.org/source/xref/trunk/ns_server/src/service_janitor.erl?r=91e43c8d#118
+
+2. If a rebalance request (n1: [kv, index, fts], n2: [kv], services: [kv]) is attempted before the janitor is run - we might reject it because the service_map for that service isn't updated yet.
+
+--------------------------------------------------------
+
+prepare_rebalance(LiveNodes),
+
+It feels like there is a lot of code in this function that need not be run when only Services "other than kv" are being rebalanced, Artem. Like for example: 
+
+1. This prepare_rebalance call and unprepare_rebalance vall which sets/unsets the Pid of ns_rebalancer on each of the rebalance_agent on 'LiveNodes'.
+2. master_activity_events for kv below at line 527 and 572 could be avoided.
+3. Not sure - but will it be guaranteed that delta-recovery buckets list will be empty when non-kv services are being rebalanced? Else code in line 549 might execute.
+
+1. I'm not sure that this is so and I'm playing safe for now. It doesn't harm to call these 2 funs. But I'll research if these calls can be skipped.
+2. I left these calls there since we still doing some work in this section. Not too pretty, but I'm not ready to drop them.
+3. I'll add the validation check on this in subsequent commit.
+
+
+
+
+rebalance_agent: https://review.couchbase.org/c/ns_server/+/109779/
+
+
+Suggestion:
+1. rebalance_agent should run on KV nodes only and only if KV is being rebalanced
+2. deactivate_bucket_data_on_unknown_nodes should be done only if KV is being rebalanced
+3. should we do run_janitor_pre_rebalance(Bucket) if kv is not being rebalanced?
+
+%% We run the janitor here to make sure that the vbucket map is in sync
+    %% with the vbucket states.
+    %% Unfortunately, we need to run it once more in rebalance_kv after
+    %% the server list for the bucket is updated. So that the states of the
+    %% vbucket on newly added nodes are applied.
+
+2 purposes:
+delta_recovery
+deactivate_bucket_data_on_unknown_nodes https://review.couchbase.org/c/ns_server/+/115299/
+
+
+
+
+activate:
+janitor_agent - mark_warmed
+
+
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t&bucketType=membase&ramQuotaMB=400&replicaNumber=2&width=1&weight=2'
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1&services=index"
+
+UninitializedServices = []
+
+
+
+[ns_server:debug,2022-11-28T16:28:18.201-08:00,n_0@192.168.0.18:<0.1305.0>:ns_orchestrator:get_uninitialized_services:1663]BLAH 2 [[kv],[index,kv]]
+[ns_server:debug,2022-11-28T16:28:18.201-08:00,n_0@192.168.0.18:<0.1305.0>:ns_orchestrator:get_uninitialized_services:1664]BLAH 3 []
+[ns_server:debug,2022-11-28T16:28:18.201-08:00,n_0@192.168.0.18:<0.1305.0>:ns_orchestrator:validate_services:1635]BLAH 1 {['n_0@192.168.0.18','n_1@127.0.0.1'],[index],[kv],[]}
+
+[[], 
+
+
+--------------------------------
+
+2 nodes, one bucket width 2, remove one node.
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=t1&bucketType=membase&ramQuotaMB=500&replicaNumber=2&width=1&weight=1'
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets/t1 -d 'width=2'
+
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/controller/rebalance -d "knownNodes=n_0@192.168.0.18,n_1@127.0.0.1&ejectedNodes=n_1@127.0.0.1&services=kv"
+
+curl -v -X GET http://Administrator:asdasd@localhost:9000/pools/default/buckets | jq
+
+
+
+--------------------------------------------
+
+delete_unused_buckets_db_files
+
+maybe_cleanup_old_buckets
+
+
+6 node cluster (2 nodes on each server_group)
+Created magma bucket with width=1
+Updated width=2 then rebalance
+Again update bucket_width=1 and rebalance (defragment method)
+Rebalace again (defragment)
+
+
+
+parse_ini_file(IniFile, Dict) ->
+
+
+...................
+      %% ets:delete(TableId, {AccSectionName, ValueName}),
+      dict:erase({AccSectionName, ValueName}, 
+
+
+
+-----------------------------------
+
+vbucket_map_history
+
+SET update_vbucket_map_history
+janitor, set_initial_map, when the map is balanced
+rebalancer, before running mover
+
+GET past_vbucket_maps
+
+
+    MB-28829 Make the check for delta recovery map stricter.
+    
+    It will not only check that the delta recovery nodes have the desired
+    vbuckets, but also that the set of vbuckets on other nodes does not
+    change.
+    
+    Change-Id: I2ac38635d2504c57345a168242bd0b35885446f7
+    Reviewed-on: http://review.couchbase.org/92816
+    Tested-by: Aliaksey Artamonau <aliaksey.artamonau@couchbase.com>
+
+
+    MB-17417: Clear recovery-type after full recovery.
+    
+    The recovery_type and failover_vbuckets keys in the ns_config get
+    cleared in case of delta recovery completion but they don't get
+    cleared in case of full receovery earlier. This patches clears
+    them up.
+    
+    Change-Id: I086a8fded38bdf4dc4de5a29239b7bd22e6154ab
+    Reviewed-on: http://review.couchbase.org/77520
+    Tested-by: Ajit Yagaty <ajit.yagaty@couchbase.com>
+    Reviewed-by: Aliaksey Artamonau <aliaksiej.artamonau@gmail.com>
+
+
+update_failover_vbuckets_sets(Snapshot, {Node, BucketResults}) ->
+ex: [{"test", [0, 1, 2, 3]}, {"test1", [0, 1, 2, 3]}]
+
+{node, Node, failover_vbuckets}
+
+failover:clear_failover_vbuckets_sets
+when activate delta nodes for DeltaNodes
+after delta recovery is set for KeepNodes
+
+update_failover_vbuckets
+after each failover
+
+Task: check how this field behaves when failing over nodes with placed buckets
+
+bucket_failover_vbuckets
+ dict:from_list(
+[{node1, [0, 1, 2, 3]}....] for a Bucket
+
+
+old algo:
+find a map in hist that has the same vbuckets on delta nodes as the failover_vbuckets
+
+new algo:
+replenish a current map with failover_vbuckets and find the map in history that matches
+
+bucket placer should prefer the nodes where bucket already was (from failover_vbuckets)
+
+Proposal: include bucket id's into failover_vbuckets
+
+
+
+rp(ns_bucket:get_buckets()).
+
+
+(n_0@192.168.0.18)4> failover:get_failover_vbuckets(ns_config:latest(), 'n_2@127.0.0.1'). 
+[{"test",[2,3,4,8,9,10,11,12,13,14,15]}]
+
+(n_0@192.168.0.18)8> rp(ns_bucket:past_vbucket_maps()).
+[{[['n_0@192.168.0.18','n_1@127.0.0.1'],
+   ['n_0@192.168.0.18','n_1@127.0.0.1'],
+   ['n_0@192.168.0.18','n_2@127.0.0.1'],
+   ['n_0@192.168.0.18','n_2@127.0.0.1'],
+   ['n_0@192.168.0.18','n_2@127.0.0.1'],
+   ['n_1@127.0.0.1','n_0@192.168.0.18'],
+   ['n_1@127.0.0.1','n_0@192.168.0.18'],
+   ['n_1@127.0.0.1','n_0@192.168.0.18'],
+   ['n_1@127.0.0.1','n_2@127.0.0.1'],
+   ['n_1@127.0.0.1','n_2@127.0.0.1'],
+   ['n_2@127.0.0.1','n_0@192.168.0.18'],
+   ['n_2@127.0.0.1','n_0@192.168.0.18'],
+   ['n_2@127.0.0.1','n_0@192.168.0.18'],
+   ['n_2@127.0.0.1','n_1@127.0.0.1'],
+   ['n_2@127.0.0.1','n_1@127.0.0.1'],
+   ['n_2@127.0.0.1','n_1@127.0.0.1']],
+  [{replication_topology,star},
+   {tags,undefined},
+   {use_vbmap_greedy_optimization,true},
+   {max_slaves,10}]}]
+
+
+1. n1, n2, n3 2. failover n3 3. delta n3 4. success
+2. n1, n2, n3 2. failover n3 3. add n4 4. delta n3 5. fail 6. cancel add n4 7. success
+3. n1, n2, n3, n4 2. failover n3 3. failover n4 4. delta n3 5. fail 6. delta n3, n4 7. success
+3. n1, n2, n3, n4 2. failover n3 3. failover n4 4. delta n3, full n4 5. fail
+
+
+Plan:
+
+1. Make sure that delta is properly enabled with bucket placer
+2. Bucket placer to place buckets on the same delta nodes they were residing (if possible)
+3. Maybe do not allow bucket_placer to automatically defrag
+4. Defragmentation is mutually exclusive with delta recovery
+5. Pass servers correctly when calculating delta buckets
+6. Store last balanced map for each bucket and use it for delta
+7. For any other purposes treat maps in history as equal if they match regardless of node names (map templates)
+
+
+1.-------------------------------
+
+curl -v -X POST http://Administrator:asdasd@localhost:9000/pools/default/buckets -d 'name=test&bucketType=membase&ramQuotaMB=400&replicaNumber=2&width=2&weight=2'
+
+
+
+[{[['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+   ['n_1@127.0.0.1','n_0@192.168.0.18',undefined]],
+
+
+(n_0@192.168.0.18)14> failover:get_failover_vbuckets(ns_config:latest(), 'n_1@127.0.0.1').
+[{"test",[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]}]
+
+
+[rebalance:debug,2023-03-15T16:56:21.903-07:00,n_0@192.168.0.18:<0.18772.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1109]Couldn't delta recover bucket test because suitable vbucket map is not found in the history
+[ns_server:info,2023-03-15T16:56:21.904-07:00,n_0@192.168.0.18:<0.2348.0>:ns_orchestrator:idle:871]Rebalance <<"5482b1120c3f1de76ea6f85011441d95">> was not started due to error: delta_recovery_not_possible
+
+
+[ns_server:debug,2023-03-15T17:04:04.878-07:00,n_0@192.168.0.18:<0.3647.0>:ns_rebalancer:validate_delta_recovery:236]BLAH 1 {['n_0@192.168.0.18','n_1@127.0.0.1','n_2@127.0.0.1'],
+        [{"test",['n_0@192.168.0.18','n_1@127.0.0.1']}],
+        ['n_1@127.0.0.1']}
+[ns_server:debug,2023-03-15T17:04:04.879-07:00,n_0@192.168.0.18:<0.3647.0>:ns_rebalancer:handle_one_delta_recovery_bucket:1104]BLAH 2 {['n_0@192.168.0.18','n_1@127.0.0.1'],['n_1@127.0.0.1']}
+[ns_server:debug,2023-03-15T17:04:04.879-07:00,n_0@192.168.0.18:<0.3647.0>:ns_rebalancer:find_delta_recovery_map:1012]BLAH 3 {['n_0@192.168.0.18','n_1@127.0.0.1'],
+        ['n_1@127.0.0.1'],
+        [{replication_topology,star},
+         {tags,undefined},
+         {use_vbmap_greedy_optimization,true},
+         {max_slaves,10}],
+        [['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined],
+         ['n_0@192.168.0.18',undefined,undefined]]}
+[ns_server:debug,2023-03-15T17:04:04.880-07:00,n_0@192.168.0.18:<0.3647.0>:ns_rebalancer:find_delta_recovery_map:1014]BLAH hist [{[['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_0@192.168.0.18','n_1@127.0.0.1',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined],
+             ['n_1@127.0.0.1','n_0@192.168.0.18',undefined]],
+            [consider_resetting_rebalance_status,
+             {check_for_unsafe_nodes,true},
+             {check_for_unsafe_nodes,true}]}]
+[ns_server:debug,2023-03-15T17:04:04.880-07:00,n_0@192.168.0.18:<0.3647.0>:ns_rebalancer:find_delta_recovery_map:1019]BLAH 4 {{dict,1,16,16,8,80,48,
+              {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+              {{[],
+                [['n_1@127.0.0.1',0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]],
+                [],[],[],[],[],[],[],[],[],[],[],[],[],[]}}},
+        []}
+
+
+
+     {"Placement during delta recovery",
+      fun () ->
+              S = PreRebalanceSnapshot(2),
+              DS = [ns_bucket:get_desired_servers(B) ||
+                       {_, B} <- ns_bucket:get_buckets(S)],
+              S1 = Failover(S),
+              %%FailoverVBs = fun () ->
+              ?assertMatch(a, {S1, DS})
+      end}
+
+\
+,
+
+    DeltaRebalance =
+        fun (FailoverVBs, S) ->
+                RV = rebalance(AllNodes,
+                               fun (_) ->
+                                       dict:from_list(FailoverVBs)
+                               end, [], Params, S),
+                ?assertMatch({ok, [{"B1", _}]}, RV),
+                {ok, [{"B1", DS}]} = RV,
+                DS
+        end,
+
+
+
+     {"Delta recovery",
+      fun () ->
+              S = functools:chain(
+                    Snapshot,
+                    [SuccessPlacement("B1", [{width, 3}, {weight, 1}], _),
+                     SuccessPlacement("B2", [{width, 1}, {weight, 1}], _)]),
+              S1 = Failover([b1, c1], S),
+              ?assertMatch(ok, DeltaRebalance([{b1, [1]}, {c1, [2]}], S1))
+      end}].
+
+
+
+[ns_server:debug,2023-03-24T12:46:52.022-07:00,n_0@127.0.0.1:ns_audit<0.580.0>:ns_audit:handle_call:148]Audit auth_failure: [{local,{[{ip,<<"127.0.0.1">>},{port,9000}]}},
+                     {remote,{[{ip,<<"127.0.0.1">>},{port,61770}]}},
+                     {real_userid,{[{domain,builtin},
+                                    {user,<<"@cbq-engine">>}]}},
+                     {timestamp,<<"2023-03-24T12:46:52.021-07:00">>},
+                     {raw_url,<<"<ud>/_cbauth/checkPermission?domain=external&permission=cluster.bucket%5Btest%5D.n1ql.select%21execute&user=test</ud>">>}]
+
+
+cluster.bucket[test].n1ql.select!execute
+
+
+Reduce Heartbeat Interval:
+https://docs.google.com/document/d/18HMzzfUsGnivsQK1FvF08QuE7bCpOx_hmmmCIn7bUoY
+
+Orchestrator Placement:
+https://docs.google.com/document/d/1zrnMR441THeSWOohe-5H8S3Ro2x-EFBCfQXd5mq0EeA
+
+Hareen:
+https://review.couchbase.org/c/ns_server/+/188398
+https://review.couchbase.org/c/ns_server/+/188906
+
+Steve:
+--https://review.couchbase.org/c/ns_server/+/188847
+--https://review.couchbase.org/c/ns_server/+/188851
+
+Tim:
+--https://review.couchbase.org/c/couchdb/+/185806
+--https://review.couchbase.org/c/ns_server/+/188704
+
+
+
+Hey all: Thanks 
+@matt
+ for laying out the phases. Actually we need to get started thinking about the server enhancements we’ll need to make to allow SN to run as a “regular REST API client” rather than a cbauth client. Here are the things I think we need:
+Ability for non-internal users to be the authenticating user in an on-behalf-of request
+A new REST API - or an existing REST API that’s been improved - as follows:
+Lets clients know when there’s been a change to authentication or authorization information (including certs) so SN can invalidate any caches it has
+Support streaming with a periodic heartbeat
+Anything else?
+Both of these topics require some discussion.
+On (1) the principled approach would be to intersect the privileges of the authenticating user and the authorizing user probably with the addition of a “is permitted to use on-behalf-of” privilege check. Though this sounds like maybe too much for 7.2.1 so perhaps we can reduce the work by only extending on-behalf-of to full-admins — who are already uber-privileged. But this needs some discussion with both ns_server folks and memcached (Trond).
+On (2) the bit that’s absolutely needed is the signal to invalidate auth caches. I think we should do this with permisson, user, auth and cert versions — just as is done for cbauth. Natural place to do this is pools/default (and poolStreaming/default) but obviously there is no periodic heartbeat for this — or any other streaming REST API — today.
+@Abhi
+: I think it would be good to get someone writing the proposals for how we might do these two things and invite comments from folks so we can get rolling. Can you start on this?
+
+
+Trond:
+On (1): You're describing how it is implemented in memcached as of today and we've got the "impersonate" privilege check in place. On "pre-elixir" ns_server grants all privileges to all the internal users, and "in trunk" its split it into separate privilege sets. All of the internal services are still part of the "trusted computing base" and granted the "impersonate" privilege. If one creates a new "@sngw" user (or whatever we call it) with the same "setup" as all of the other internal users it should "work out of the box" from memcached POV.
+Note: I'm only talking about that the ability to use "impersonate" for commands. Using it for every operation will add a performance penalty in memcached as the implementation was not designed for that.
+When a client connects we build up a privilege context and we will only rebuild the privilege context when the user switch bucket (and most clients only operate on a single bucket) and when the privilege database change (this require an action from the operator, so it is also not that often). (And this hasn't been a huge problem as people typically use persistent connections).
+Whenever the command contains an impersonated user we have to look up the user and build a privilege context object for the impersonated user. This currently happens in the front end threads and access a global data structure, and if we're going to do that for every operation in all front end threads we might get contention on that data structure.
+If we're expecting this to be the main access method to the node it could be that we're better off by introducing a "su" command like unix to replace the identity of the connection with the one provided if it holds the appropriate privilege (with the exception that you cannot restore the old identity). I would assume that for performance reasons sngw keeps a pool of connections tied to each bucket anyway (to avoid having to do a select bucket for each command).
+
+
+Support streaming with a periodic heartbeat
+Why "periodic heartbeat" ?
+
+
+
+http://localhost:9000/pools/default?etag=46650815&waitChange=10000
+
+
+cbauthimpl.MaybeGetCredsFromCert
+
+ExtractCreds
+
+ExtractOnBehalfIdentity(
+
+VerifyOnBehalf = verifySpecialCreds
+
+VerifyPassword
+
+---------------------------
+
+GetDefaultServiceFromEnv
+
+default.go
+// InternalRetryDefaultInitWithService can be used by golang services that are
+// willing to perform manual initialization of cbauth (i.e. for easier
+// testing). This API is subject to change and should be used only if
+// really needed. Returns false if Default Authenticator was already
+// initialized.
+func InternalRetryDefaultInitWithService(service, mgmtHostPort, user, password string) (bool, error) {
+
+json_rpc_events
+{started, Label, self()}
+{needs_update, Label, self()} - on reannounce
+
+
+   authCheckUrl: "xxx",
+   authVersion: 1234,
+   permissionCheckUrl: "xxx",
+   permissionsVersion: 1234,
+   clientCertAuthVersion: 1234,
+   extractUserFromCertUrl: "xxx",
+   tlsConfig: {
+      clientAuthType: "xxx"
+   }
+}
+
+
+
+--------------------------
+
+[error_logger:info,2023-04-19T17:37:02.172-07:00,n_0@cb.local:ns_server_sup<0.441.0>:ale_error_logger_handler:do_log:101]
+=========================PROGRESS REPORT=========================
+    supervisor: {local,ns_server_sup}
+    started: [{pid,<0.1382.0>},
+              {name,testconditions_store},
+              {mfargs,{simple_store,start_link,[testconditions]}},
+              {restart_type,permanent},
+              {shutdown,1000},
+              {child_type,worker}]
+
+
+[error_logger:info,2023-04-19T17:37:06.209-07:00,n_0@cb.local:ns_server_sup<0.441.0>:ale_error_logger_handler:do_log:101]
+=========================PROGRESS REPORT=========================
+    supervisor: {local,ns_server_sup}
+    started: [{pid,<0.1497.0>},
+              {name,terse_cluster_info_uploader},
+              {mfargs,{terse_cluster_info_uploader,start_link,[]}},
+              {restart_type,permanent},
+              {shutdown,1000},
+              {child_type,worker}]
+[
+
+
+
+[ns_server:info,2023-04-20T12:12:49.105-07:00,babysitter_of_n_0@cb.local:<0.111.0>:ns_babysitter:init_logging:137]Brought up babysitter logging
+
+[ns_server:debug,2023-04-20T12:12:49.308-07:00,babysitter_of_n_0@cb.local:<0.128.0>:supervisor_cushion:init:33]starting ns_port_server with delay of 5000
+
+...........
+
+[ns_server:debug,2023-04-20T12:13:55.317-07:00,n_0@cb.local:ns_ports_setup<0.878.0>:ns_ports_manager:set_dynamic_children:48]Setting children [memcached,saslauthd_port,goxdcr]
+
+[error_logger:info,2023-04-20T12:13:55.320-07:00,babysitter_of_n_0@cb.local:ns_child_ports_sup<0.130.0>:ale_error_logger_handler:do_log:101]
+=========================PROGRESS REPORT=========================
+    supervisor: {local,ns_child_ports_sup}
+    started: [{pid,<0.134.0>},
+              {id,{memcached,"/Users/artem/work/neo/install/bin/memcached",
+                      ["-C",
+                       "/Users/artem/work/neo/ns_server/data/n_0/config/memcached.json"],
+                      [{env,
+                           [{"EVENT_NOSELECT","1"},
+                            {"CBSASL_PWFILE",
+                             "/Users/artem/work/neo/ns_server/data/n_0/isasl.pw"}]},
+
+[ns_server:info,2023-04-20T12:13:55.320-07:00,babysitter_of_n_0@cb.local:ns_ports_manager<0.131.0>:ns_child_ports_sup:launch_port:88]supervising port: {memcached,"/Users/artem/work/neo/install/bin/memcached",
+
+
+[ns_server:debug,2023-04-20T12:14:19.604-07:00,n_0@cb.local:<0.9.0>:child_erlang:child_loop:128]31222: Entered child_loop
+
+
+2023-04-20T12:14:15.465601-07:00 INFO ---------- Opening logfile: 
+2023-04-20T12:14:15.467197-07:00 INFO Couchbase version 7.2.0-0000 starting.
+
+
+-------------------------------------------
+skip implementation
+-------------------------------------------
+
+[ns_server:info,2023-04-20T12:45:00.351-07:00,babysitter_of_n_0@cb.local:<0.111.0>:ns_babysitter:init_logging:137]Brought up babysitter logging
+[ns_server:info,2023-04-20T12:45:32.569-07:00,babysitter_of_n_0@cb.local:ns_ports_manager<0.131.0>:ns_child_ports_sup:launch_port:88]supervising port: {memcached,"/Users/artem/work/neo/install/bin/memcached",
+
+2023-04-20T12:45:42.522095-07:00 INFO ---------- Opening logfile: 
+
+[ns_server:debug,2023-04-20T12:45:48.114-07:00,n_0@cb.local:<0.9.0>:child_erlang:child_loop:128]32310: Entered child_loop
+
+12:49 - 14:19
+45:00 - 45:48
+
+12:08:56 - 12:09:45
+15:43:20 - 15:44:09
+
+--------------------------------
+
+[ns_server:debug,2023-04-20T12:45:05.933-07:00,n_0@cb.local:<0.312.0>:ns_couchdb_api:rpc_couchdb_node:152]RPC to couchdb node failed for restart_capi_ssl_service with {badrpc,nodedown}
+Stack: [{ns_couchdb_api,rpc_couchdb_node,4,
+                        [{file,"src/ns_couchdb_api.erl"},{line,150}]},
+        {ns_ssl_services_setup,do_notify_service,1,
+                               [{file,"src/ns_ssl_services_setup.erl"},
+                                {line,1074}]},
+        {ns_ssl_services_setup,notify_service,1,
+                               [{file,"src/ns_ssl_services_setup.erl"},
+                                {line,1050}]},
+        {async,'-async_init/4-fun-1-',3,[{file,"src/async.erl"},{line,191}]}]
+[ns_server:warn,2023-04-20T12:45:05.933-07:00,n_0@cb.local:<0.312.0>:ns_ssl_services_setup:notify_service:1055]Failed to notify service capi_ssl_service: {'EXIT',{error,{badrpc,nodedown}}}
+
+[ns_server:info,2023-04-20T12:45:05.961-07:00,n_0@cb.local:ns_ssl_services_setup<0.285.0>:ns_ssl_services_setup:notify_services:1044]Failed to notify some services. Will retry in 5 sec, [{{error,no_proccess},
+                                                       memcached},
+                                                      {{'EXIT',
+                                                        {error,
+                                                         {badrpc,nodedown}}},
+                                                       capi_ssl_service}]
+
+[ns_server:debug,2023-04-20T12:45:07.989-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:167]ns_couchdb is not ready: {badrpc,nodedown}
+[ns_server:debug,2023-04-20T12:45:09.019-07:00,couchdb_n_0@cb.local:menelaus_users_cache<0.184.0>:dist_manager:wait_for_node:284]Observed node 'n_0@cb.local' to come up
+[error_logger:info,2023-04-20T12:45:09.259-07:00,couchdb_n_0@cb.local:cb_couch_sup<0.186.0>:ale_error_logger_handler:do_log:101]Apache CouchDB has started on http://0.0.0.0:9500/
+
+[ns_server:debug,2023-04-20T12:45:10.961-07:00,n_0@cb.local:ns_ssl_services_setup<0.285.0>:ns_ssl_services_setup:notify_services:1017]Going to notify following services: [memcached,capi_ssl_service]
+[ns_server:warn,2023-04-20T12:45:10.962-07:00,n_0@cb.local:<0.402.0>:ns_ssl_services_setup:notify_service:1055]Failed to notify service memcached: {error,no_proccess}
+
+
+
+[ns_server:debug,2023-04-20T12:45:10.961-07:00,n_0@cb.local:ns_ssl_services_setup<0.285.0>:ns_ssl_services_setup:notify_services:1017]Going to notify following services: [memcached,capi_ssl_service]
+[ns_server:warn,2023-04-20T12:45:10.962-07:00,n_0@cb.local:<0.402.0>:ns_ssl_services_setup:notify_service:1055]Failed to notify service memcached: {error,no_proccess}
+[ns_server:debug,2023-04-20T12:45:14.022-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:167]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T12:45:14.323-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T12:45:14.323-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T12:45:19.223-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:167]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T12:45:19.832-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T12:45:19.833-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T12:45:24.426-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:167]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T12:45:25.248-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T12:45:25.248-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T12:45:29.629-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:167]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T12:45:30.748-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T12:45:30.748-07:00,couchdb_n_0@cb.local:couch_audit<0.290.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T12:45:30.750-07:00,couchdb_n_0@cb.local:<0.346.0>:restartable:start_child:92]Started child process <0.464.0>
+  MFA: {ns_ssl_services_setup,start_link_capi_service,[]}
+[error_logger:info,2023-04-20T12:45:30.750-07:00,couchdb_n_0@cb.local:ns_couchdb_sup<0.183.0>:ale_error_logger_handler:do_log:101]
+=========================PROGRESS REPORT=========================
+    supervisor: {local,ns_couchdb_sup}
+    started: [{pid,<0.346.0>},
+              {name,ns_capi_ssl_service},
+              {mfargs,
+                  {restartable,start_link,
+                      [{ns_ssl_services_setup,start_link_capi_service,[]},
+                       1000]}},
+              {restart_type,{permanent,4}},
+              {shutdown,infinity},
+              {child_type,worker}]
+
+
+
+---------------------------
+
+[ns_server:info,2023-04-20T13:19:17.135-07:00,nonode@nohost:<0.144.0>:ns_server:init_logging:120]Started & configured logging
+
+[ns_server:debug,2023-04-20T13:19:19.588-07:00,n_0@cb.local:wait_link_to_couchdb_node<0.377.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:153]Waiting for ns_couchdb node to start
+
+[ns_server:debug,2023-04-20T13:19:20.590-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,nodedown}
+
+[ns_server:debug,2023-04-20T13:19:20.816-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,nodedown}
+
+[ns_server:debug,2023-04-20T13:19:22.053-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,nodedown}
+
+[ns_server:debug,2023-04-20T13:19:22.265-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: false
+
+[ns_server:debug,2023-04-20T13:19:27.467-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[ns_server:debug,2023-04-20T13:19:32.669-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[ns_server:debug,2023-04-20T13:19:37.871-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[ns_server:debug,2023-04-20T13:19:43.073-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[ns_server:debug,2023-04-20T13:19:44.294-07:00,n_0@cb.local:wait_link_to_couchdb_node<0.377.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:180]Link to couchdb node (<16408.183.0>) was established. Wait took 24706 ms
+
+----------------------------------------
+
+[ns_server:info,2023-04-20T13:19:22.201-07:00,couchdb_n_0@cb.local:<0.91.0>:ns_couchdb:init_logging:137]Brought up ns_couchdb logging
+[ns_server:debug,2023-04-20T13:19:22.203-07:00,couchdb_n_0@cb.local:<0.91.0>:dist_manager:configure_net_kernel:298]Set net_kernel vebosity to 10 -> 0
+[ns_server:debug,2023-04-20T13:19:22.204-07:00,couchdb_n_0@cb.local:<0.91.0>:ns_couchdb:start:50]Waiting for ns_server 'n_0@cb.local' to establish a connection to us
+
+[ns_server:info,2023-04-20T13:19:22.408-07:00,couchdb_n_0@cb.local:<0.91.0>:ns_couchdb:start:61]CouchDB node 'couchdb_n_0@cb.local' was initialized for 'n_0@cb.local'. Cookie: {sanitized,
+                                                                                 <<"M5WhlMDo6Y3qwi9EjAtKMbFA7Ivf06plue1pljHEf54=">>}
+
+
+
+[ns_server:info,2023-04-20T13:19:22.697-07:00,couchdb_n_0@cb.local:ns_config_rep<0.299.0>:ns_couchdb_config_rep:do_pull:77]Pulling config from: 'n_0@cb.local'
+
+[ns_server:debug,2023-04-20T13:19:42.790-07:00,couchdb_n_0@cb.local:<0.348.0>:restartable:start_child:92]Started child process <0.481.0>
+  MFA: {ns_ssl_services_setup,start_link_capi_service,[]}
+
+
+start_link_capi_service() ->
+    ok = ns_couchdb_config_rep:pull(),
+
+
+[ns_server:info,2023-04-20T13:55:02.174-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:88]Starting CAPI service
+[ns_server:info,2023-04-20T13:55:19.706-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:158]Starting web server
+[ns_server:info,2023-04-20T13:55:25.715-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:168]Web server started
+
+
+
+
+--------------------------
+
+[ns_server:debug,2023-04-20T14:15:28.339-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:410]BLAH OPTS 2
+[ns_server:debug,2023-04-20T14:15:31.358-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:412]BLAH OPTS 3
+[ns_server:debug,2023-04-20T14:15:38.267-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:423]BLAH OPTS 5
+[ns_server:debug,2023-04-20T14:15:41.272-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:97]BLAH 2
+
+ns_server_ciphers() 2sec
+
+supported_versions(ssl_minimum_protocol(ns_server)) 7sec
+
+after 6 - 3sec
+
+2-3, 
+
+[ns_server:debug,2023-04-20T14:15:28.339-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:91]BLAH 1
+[ns_server:debug,2023-04-20T14:15:28.339-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:401]BLAH OPTS 1
+[ns_server:debug,2023-04-20T14:15:29.929-07:00,n_0@cb.local:ns_ssl_services_setup<0.288.0>:ns_ssl_services_setup:notify_services:1036]Going to notify following services: [memcached,capi_ssl_service]
+[ns_server:warn,2023-04-20T14:15:29.929-07:00,n_0@cb.local:<0.404.0>:ns_ssl_services_setup:notify_service:1074]Failed to notify service memcached: {error,no_proccess}
+[ns_server:debug,2023-04-20T14:15:31.358-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:420]BLAH OPTS 4
+[ns_server:debug,2023-04-20T14:15:33.181-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T14:15:33.263-07:00,couchdb_n_0@cb.local:couch_audit<0.292.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T14:15:33.264-07:00,couchdb_n_0@cb.local:couch_audit<0.292.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T14:15:38.267-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_server_opts:423]BLAH OPTS 5
+[ns_server:debug,2023-04-20T14:15:38.268-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:ssl_auth_options:366]BLAH OPTS 6
+[ns_server:debug,2023-04-20T14:15:38.383-07:00,n_0@cb.local:<0.378.0>:ns_server_nodes_sup:do_wait_link_to_couchdb_node:168]ns_couchdb is not ready: {badrpc,timeout}
+[couchdb:info,2023-04-20T14:15:39.268-07:00,couchdb_n_0@cb.local:couch_audit<0.292.0>:couch_log:info:30]Unable to connect to memcahced: {error,{badmatch,{error,econnrefused}}}.
+[couchdb:error,2023-04-20T14:15:39.269-07:00,couchdb_n_0@cb.local:couch_audit<0.292.0>:couch_log:error:33]Error in sending log messsage to memcached Reason: no_socket
+[ns_server:debug,2023-04-20T14:15:41.272-07:00,couchdb_n_0@cb.local:<0.348.0>:ns_ssl_services_setup:do_start_link_capi_service:97]BLAH 2
+
+
+tls_v1:suites(4).
+
+
+
+[ns_server:info,2023-04-20T16:16:35.987-07:00,couchdb_n_0@cb.local:<0.350.0>:ns_ssl_services_setup:do_start_link_capi_service:88]Starting CAPI service
+
+[ns_server:info,2023-04-20T16:16:51.420-07:00,couchdb_n_0@cb.local:<0.350.0>:ns_ssl_services_setup:do_start_link_capi_service:166]Starting web server
+
+ssl_server_opts() 35, 51
+
+
+ns_server_ciphers() 35, 42
+
+supported_versions(ssl_minimum_protocol(ns_server)), 42, 46
+
+ssl_auth_options(), 
+
+
+------------------------------------------------------------
+
+
+~/work/neo/goproj/src/github.com/couchbase/cbauth/cmd/cbauth-example/
+
+export GOPATH=~/work/neo/goproj:~/work/neo/godeps
+
+export GOPATH=~/work/neo/goproj
+
+go run cbauth-example.go
+
+go run cbauth-example.go -auth Administrator:asdasd -listen :8080 -mgmtURL=http://localhost:9000/
+
+go mod tidy
+
+git checkout -- ../../go.mod
+
+go run cmd/cbauth-example/cbauth-example.go -auth Administrator:asdasd -listen :8080
+
+go run cmd/cbauth-example/cbauth-example.go -auth Administrator:asdasd -listen :8080 -mgmtURL http://localhost:9000/
+
+curl http://Administrator:asdasd@localhost:8080/bucket/test
+
+go run cmd/cbauth-example/cbauth-example.go -auth Administrator:asdasd -listen :8080 -mgmtURL http://localhost:9000/ -external=true
+
+
+
+
+curl -v 'http://Administrator:asdasd@localhost:9000/_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator'
+
+
+
+[ns_server:debug,2023-04-25T16:48:15.637-07:00,n_0@127.0.0.1:<0.24334.0>:menelaus_web_rbac:handle_check_permission_for_cbauth:1500]BLAH PERM {true,{"Administrator",admin},
+                "cluster.bucket[test].settings!read",
+                {[{bucket,"test"},settings],read}}
+::1 - Administrator [25/Apr/2023:16:48:15 -0700] "GET /_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator HTTP/1.1" 200 0 - "curl/7.64.1" 0
+
+
+[ns_server:debug,2023-04-25T16:49:03.518-07:00,n_0@127.0.0.1:ns_audit<0.676.0>:ns_audit:handle_call:149]Audit auth_failure: [{local,{[{ip,<<"::1">>},{port,9000}]}},
+                     {remote,{[{ip,<<"::1">>},{port,50299}]}},
+                     {real_userid,{[{domain,rejected},
+                                    {user,<<"<ud></ud>">>}]}},
+                     {timestamp,<<"2023-04-25T16:49:03.517-07:00">>},
+                     {raw_url,<<"<ud>/_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator</ud>">>}]
+::1 - - [25/Apr/2023:16:49:03 -0700] "GET /_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator HTTP/1.1" 401 0 - "Go-http-client/1.1" 2
+
+/_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator
+/_cbauth/checkPermission?domain=admin&permission=cluster.bucket%5Btest%5D.settings%21read&user=Administrator
+
+
+
+    // Wait for termination signal
+    interruptSignal := make(chan os.Signal, 1)
+    signal.Notify(interruptSignal, syscall.SIGINT, syscall.SIGTERM)
+    <-interruptSignal
+
+    // Terminate the server
+    server.GracefulStop()
+    listener.Close()
+
+
+	conn, err := net.Dial("tcp", s.url.Host)
+ conn.Close
+
+
+codec.Close() error
+
+
+func (c *serverCodec) Close() error {
+	return c.c.Close()
+}
+
+c:       conn,
+
+
+
+
+Destrier:cbauth artem$ go test
+2023/05/03 12:27:31 Will not retry on error: Need 200 status!. Got {401 Unauthorized 401 HTTP/1.1 1 1 map[Content-Length:[0] Date:[Wed, 03 May 2023 19:27:31 GMT]] {} 0 [] false false map[] 0xc0000c2900 <nil>}
+--- FAIL: TestStaleErrorFormatting (10.00s)
+    cbauth_test.go:331: error string:  CBAuth database is stale. Was never updated yet.
+panic: runtime error: slice bounds out of range [:61] with length 48 [recovered]
+	panic: runtime error: slice bounds out of range [:61] with length 48
+
+goroutine 51 [running]:
+testing.tRunner.func1.2({0x145f640, 0xc00028e048})
+	/usr/local/go/src/testing/testing.go:1396 +0x24e
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1399 +0x39f
+panic({0x145f640, 0xc00028e048})
+	/usr/local/go/src/runtime/panic.go:884 +0x212
+github.com/couchbase/cbauth.TestStaleErrorFormatting(0xc000093d40)
+	/Users/artem/work/neo/goproj/src/github.com/couchbase/cbauth/cbauth_test.go:333 +0x3bc
+testing.tRunner(0xc000093d40, 0x14c1938)
+	/usr/local/go/src/testing/testing.go:1446 +0x10b
+created by testing.(*T).Run
+	/usr/local/go/src/testing/testing.go:1493 +0x35f
+exit status 2
+
+
+
+2023/05/03 12:45:22 Will not retry on error: Need 200 status!. Got {401 Unauthorized 401 HTTP/1.1 1 1 map[Content-Length:[0] Date:[Wed, 03 May 2023 19:45:22 GMT]] {} 0 [] false false map[] 0xc0000be900 <nil>}
+
+
+
+1. Heartbeats
+2. Versioning (dictated by the client code)
+
+
+
+2023/05/03 15:59:07 http: panic serving [::1]:55122: runtime error: invalid memory address or nil pointer dereference
+goroutine 32 [running]:
+net/http.(*conn).serve.func1()
+	/usr/local/go/src/net/http/server.go:1850 +0xbf
+panic({0x137da60, 0x16906b0})
+	/usr/local/go/src/runtime/panic.go:890 +0x262
+github.com/couchbase/cbauth/revrpc.(*Service).Disconnect(...)
+	/Users/artem/work/neo/goproj/src/github.com/couchbase/cbauth/revrpc/revrpc.go:199
+github.com/couchbase/cbauth.(*restartableAuthImpl).disconnect(0x16a1820)
+	/Users/artem/work/neo/goproj/src/github.com/couchbase/cbauth/default.go:69 +0x77
+
+
+
+fts s-node-010 and s-node-011
+
+The nodes membership changes to active
+
+
+ns_server updates service map to include s-node-011 and s-node-010 in the service map,
+ns_rebalancer:update_service_map:368]Updating service map for fts:
+
+                      master_activity_events:note_rebalance_stage_started(
+                        Service, AllNodes),
+                      update_service_map_with_snapshot(
+                        Snapshot, Service, AllNodes),
+                      ok = rebalance_topology_aware_service(
+                             Service, KeepNodes, EjectNodes, DeltaNodes),
+                      update_service_map(Service, AllNodes, KeepNodes),
+
+
+E86WNR%e3xRgSu
+JExR^J^vHJ7ia7
+
+Initializing cbauth connection
+------------------------------
+err := cbauth.InitExternal("connection-name", "host:8091", "user", "password")
+
+Subsequent call of this function will close previous connection and open the new one. This way you can reconnect to another node if the previous one went dead or was removed from the cluster.
+
+Obtaining the current authenticator
+-----------------------------------
+auth := cbauth.GetExternalAuthenticator()
+
+Check that the node the authenticator connects to is still part of the cluster
+------------------------------------------------------------------------------
+uuid, err := auth.GetNodeUuid()
+
+This method returns the uuid of the node that currently connected to the client via cbauth revrpc. It's the clients responsibility to make sure that this node uuid is part of the cluster and reconnect to another node if it's not.
+
+authentication
+--------------
+creds, err = auth.AuthWebCreds(req)
+or
+creds, err = auth.Auth(user, password)
+
+checking permissions
+-------------------
+creds.IsAllowed(permission)
+
+
+
+on elixir
+repo sync
+make clean
+make
+
+got following errors
+[ 18%] Building CXX object magma/CMakeFiles/MAGMA_CORE_LIB.dir/Unity/unity_1_cxx.cxx.o
+In file included from /Users/artem/work/elixir/build/magma/CMakeFiles/MAGMA_CORE_LIB.dir/Unity/unity_1_cxx.cxx:7:
+/Users/artem/work/elixir/magma/lsm/encoding.cc:106:13: error: too many arguments to function call, expected at most 12, have 13
+            builder.CreateString(historyStartKey));
+            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/artem/work/elixir/magma/lsm/treestate_generated.h:232:39: note: 'CreateTreeState' declared here
+inline flatbuffers::Offset<TreeState> CreateTreeState(
+                                      ^
+In file included from /Users/artem/work/elixir/build/magma/CMakeFiles/MAGMA_CORE_LIB.dir/Unity/unity_1_cxx.cxx:7:
+/Users/artem/work/elixir/magma/lsm/encoding.cc:216:30: error: no member named 'historyStartKey' in 'serialization::TreeState'
+    historyStartKey = state->historyStartKey()->str();
+                      ~~~~~  ^
+2 errors generated.
+
+Looks like treestate_generated.h is a file generated from freestate.fbs
+
+I removed treestate_generated.h and the build succeeded
+Question: why treestate_generated.h was not removed by make clean or was not regenerated by make?
+
+
+
+
+    NewStorage0 = Storage#storage{meta = #{},
+                                  pending_meta = #{},
+                                  config = undefined,
+                                  committed_config = undefined,
+                                  pending_configs = [],
+                                  low_seqno = ?NO_SEQNO + 1,
+                                  high_seqno = ?NO_SEQNO,
+                                  pending_high_seqno = ?NO_SEQNO,
+                                  current_snapshot = no_snapshot,
+                                  extra_snapshots = [],
+                                  log_segments = []},
+
+
+StorageConfig - undefined
+StorageHighSeqno = ?NO_SEQNO = 0
+
+
+high_seqno = 800
+high_seqno = 866
+
+we keep 2 logs but just one snapshot
+
+snapshot directory:
+   subdir name are snapshot seqno's
+
+%% here we keep all snapshots we read except current. looks like this is never used
+extra_snapshots
+
+when we add new snapshot (add_snapshot) the current_snapshot is added to the list
+
+
+cleanup_snapshots - checks if extra_snapshots =! [] to proceed to file deletion in snapshot directory
+
+
+
+%% delete snapshot from the disk
+delete_snapshot
+
+%% delete snapshot from the disk and from the storage state
+release_snapshot
+     called from cheronicle_agent:release_snapshot
+
+
+
+chronicle_snapshot_mgr - makes sure that we keep just one snapshot
+
+
+snapshot: CRC + term_to_binary
+
+
+
+[ns_server:debug,2023-05-18T15:19:41.694-07:00,n_0@127.0.0.1:menelaus_cbauth<0.647.0>:menelaus_cbauth:handle_cast:115]Observed json rpc process {"external-tool-auth",
+                           [{"version","1"}],
+                           auth,<0.27816.0>} started
+
+
+InternalRetryDefaultInitWithService
+
+
+
+
+commit 91e43c8d6a44c3b4cf0e920b2ceb469117fbb48a
+Author: Blair Watt <18262146+udkyo@users.noreply.github.com>
+Date:   Tue Mar 8 17:20:29 2022 +0000
+
+https://review.couchbase.org/c/cbauth/+/177438
+
+
+-https://review.couchbase.org/c/ns_server/+/174814
+https://review.couchbase.org/c/ns_server/+/174903
+https://review.couchbase.org/c/ns_server/+/176996
+https://review.couchbase.org/c/ns_server/+/181332
+https://review.couchbase.org/c/ns_server/+/181333
+https://review.couchbase.org/c/ns_server/+/184831
+https://review.couchbase.org/c/ns_server/+/187736
+
+
+MB-55376 add NodeUUID to the cbauth payload for external clients
+MB-55376 cbauth for external clients
+
+
+
+
+* MB-55376 fix typo
+* MB-55376 remove legacy dead code
+* MB-55376 restart cbauth default external authenticator gracefully
+* MB-55376 implements method GetNodeUuid to retrieve the node id for
+* MB-55376 implements ExternalAuthenticator interface that represents
+* MB-55376 cbauth for external clients
+
+Test:
+-1. "Impersonate" in memcached.rbac
+2. on behalf via Server
+3. on behalf via cbauth-example
+
+
+
+
+curl -v http://testadmin:asdasd@localhost:9000/pools/default/buckets/test
+curl -v http://vova:asdasd@localhost:9000/pools/default/buckets/test
+curl -v http://vova:asdasd@localhost:9000/pools/default/buckets/test1
+
+
+
+curl -v --header "cb-on-behalf-of: dm92YTpsb2NhbA==" http://testadmin:asdasd@localhost:9000/pools/default/buckets/test
+
+
+curl -v --header "cb-on-behalf-of: dm92YTpsb2NhbA==" http://testuser:asdasd@localhost:9000/pools/default/buckets/test
+
+
+
+
+MB-56894 test for on-behalf auth via cbauth
+    
+    Change-Id: Ib747d500a0e1af4b90df7b20585def745a257150
+
+
+MB-56894 allow all full admins to access memcached on behalf of other
+MB-56894 allow all full admins to act on behalf of other users
+
+
+sigar_json_test
+memcached_auth_server
+
+BLAH [{cpu_host_utilization_rate,99.9999941875},
+      {cpu_host_user_rate,17.0625},
+      {cpu_host_sys_rate,12.9375},
+      {cpu_host_seconds_total_idle,655676.513},
+      {cpu_host_seconds_total_user,323534.13},
+      {cpu_host_seconds_total_sys,232792.54},
+      {cpu_host_seconds_total_other,1119999.9069999997}]
+
+
+[{cpu_host_utilization_rate,99.9999941875},
+       {cpu_host_user_rate,17.0625},
+       {cpu_host_sys_rate,12.9375}]}
+
+MB-56894 test for on-behalf auth via cbauth
+MB-56894 basic auth automated test
+MB-56894 allow full admins to act on behalf of other users while

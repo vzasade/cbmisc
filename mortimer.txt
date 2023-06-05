@@ -1,0 +1,14 @@
+https://issues.couchbase.com/browse/CBIT-4453
+
+https://github.com/couchbaselabs/mortimer
+
+BTW there's also an online version of mortimer at http://supportal.couchbase.com/latest-snapshots
+this will pre-process any logs uploaded to S3 in the UI or manually (see http://www.couchbase.com/wiki/display/couchbase/Working+with+the+Couchbase+Technical+Support+Team )
+
+Help: press ? on the keyboard
+
+Example of expression:
+|{request_enters,rest}| - |{request_leaves,rest}|
+
+Code:
+https://github.com/couchbaselabs/mortimer/blob/92c91f7e62d504285672bc48109790403229968c/mortimer/resources/public/app.js#L806

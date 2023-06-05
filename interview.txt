@@ -1,0 +1,24 @@
+anagram:
+a word formed by rearranging the letters of another, such as cinema, formed from iceman.
+
+bool isAnagram(char* w1, char* w2)
+
+finding anagrams in a big file:
+
+Let's assume we have a big file with comma separated words and limited amount of memory. The file is read only and creating temporary files is not allowed. So all you have for your calculations is a limited size memory buffer.
+
+The task is to find all anagrams in this big file and print them to the console one anagram at a time. For each anagram all the words belonging to that anagram should be printed comma separated in one line terminating with line break.
+
+The order of anagrams printed and the order of words in a line doesn't matter.
+
+Example of printout:
+
+file:
+abc, cba, efd, dfe, efd, bca, gh, fda
+
+console:
+abc, cba, bca
+efd, dfe, efd, fda
+gh
+
+
